@@ -714,7 +714,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2051577096}
-  - component: {fileID: 2051577095}
+  - component: {fileID: 2051577097}
   m_Layer: 0
   m_Name: MapManager
   m_TagString: Untagged
@@ -722,22 +722,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2051577095
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2051577094}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  wallPrefab: {fileID: 442484797914160985, guid: 3aa183f4043ce404e9e694af62c31d3d, type: 3}
-  width: 50
-  height: 50
-  wallCount: 50
 --- !u!4 &2051577096
 Transform:
   m_ObjectHideFlags: 0
@@ -753,6 +737,31 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2051577097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051577094}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
+  width: 16
+  height: 16
+  mazeTilePrefab: {fileID: 4897448205815913263, guid: c2d8dd6015e152b4b92df4340c3ff20f, type: 3}
+  fillerTilePrefab: {fileID: 3377710762524717263, guid: 83faab24fe80fd6428afc596602a9b90, type: 3}
+  horizontalTiles:
+  - {fileID: 1050046329379417215, guid: 8a27a0d5ef1bd9749a195e0cf0f47dbf, type: 3}
+  verticalTiles:
+  - {fileID: 4255094358438813136, guid: 5e23f67898820e54da56795b57a65634, type: 3}
+  cornerTiles:
+  - {fileID: 471237337610523522, guid: 4e07467d966e0b74da632b729412efd1, type: 3}
+  - {fileID: 6430282808169450390, guid: 901bc3364717fb44ab5e74fa71a828df, type: 3}
+  - {fileID: 6202188625349640496, guid: 57965d679d9038141ae7316f6c13205d, type: 3}
+  - {fileID: 3102089176066063782, guid: 47edecb9d29cb384aaeca6861fed2329, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -2,49 +2,115 @@ using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
 {
-    public GameObject wallPrefab;
+    [Header("Map Size")]
+    public int width = 5;
+    public int height = 5;
 
-    public int width = 50;
-    public int height = 50;
-    public int wallCount = 50;
+    [Header("Tile Prefabs")]
+    public GameObject mazeTilePrefab;
+    public GameObject fillerTilePrefab;
+    public GameObject[] horizontalTiles;
+    public GameObject[] verticalTiles;
+    public GameObject[] cornerTiles;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    enum TileType 
+    { 
+        Border, 
+        Maze, 
+        Filler 
+    }
+
+    private TileType[,] mapLayout;
+    private GameObject[,] placedTiles;
     void Start()
     {
-        Debug.Log("MapGenerator running");
+        Debug.Log(GetTileSize(fillerTilePrefab));
         GenerateMap();
-        CreateBorderWalls();
     }
 
     void GenerateMap()
     {
-        //space between tiles
-        float tileSize = 1f;
-
-        for (int x = -width / 2; x < width / 2; x++)
+        placedTiles = new GameObject[width, height];
+        for (int x = 0; x < width; x++)
         {
-            for (int y = -height / 2; y < height / 2; y++)
+            for ( int y = 0; y < height; y++)
             {
-                Vector3 position = new Vector3(x * tileSize, y * tileSize, 0);
-                //random walls
-                if (Random.value < 0.2f)
+                GameObject tilePrefab;                
+                //random rotation for tiles in 90 degree variations
+                Quaternion rotation = Quaternion.identity;
+               if (x == 0 && y==0) //bottom left corner
                 {
-                    Instantiate(wallPrefab, position, Quaternion.identity);
+                    tilePrefab = GetRandom(cornerTiles);
+                    rotation = Quaternion.Euler(0, 0, 0);
                 }
+                else if ( x == 0 && y == height - 1) //top left corner
+                {
+                    tilePrefab = GetRandom(cornerTiles);
+                    rotation = Quaternion.Euler(0, 0, 90);
+                }
+                else if (x == width -1  && y == height - 1) //top right corner
+                {
+                    tilePrefab = GetRandom(cornerTiles);
+                    rotation = Quaternion.Euler(0, 0, 180);
+                }
+                else if (x == width - 1 && y == 0) //bottom right corner
+                {
+                    tilePrefab = GetRandom(cornerTiles);
+                    rotation = Quaternion.Euler(0, 0, 270);
+                }
+                else if (y == 0 || y == height -1)
+                {
+                    tilePrefab = GetRandom(horizontalTiles);
+                }
+                else if (x == 0 || x == width - 1)
+                {
+                    tilePrefab = GetRandom(verticalTiles);
+                }
+                else
+                {
+                    float rand = Random.value;
+                    if (rand < 0.7)
+                        tilePrefab = fillerTilePrefab;
+                    else
+                        tilePrefab = mazeTilePrefab;
+                }
+                float tileSize = GetTileSize(fillerTilePrefab);
+                Vector3 position = new Vector3(x * tileSize, y * tileSize, 0);
+                placedTiles[x, y] = Instantiate(tilePrefab, position, rotation);
             }
-        }   
-    }
-    void CreateBorderWalls()
-    {
-        for (int x = -width / 2; x <= width / 2; x++)
-        {
-            Instantiate(wallPrefab, new Vector3(x, -height / 2, 0), Quaternion.identity); //bottom border
-            Instantiate(wallPrefab, new Vector3(x, height / 2, 0), Quaternion.identity); // top border
         }
-        for (int y = -height / 2; y <= height / 2; y++)
+        CenterMap();
+    }
+
+    float GetTileSize(GameObject prefab)
+    {
+        SpriteRenderer sr = prefab.GetComponent<SpriteRenderer>();
+        if (sr != null)
         {
-            Instantiate(wallPrefab, new Vector3(-width / 2, y, 0), Quaternion.identity); // left border
-            Instantiate(wallPrefab, new Vector3(width / 2, y, 0), Quaternion.identity); //right border
+            return sr.bounds.size.x; // Assuming square tiles
+        }
+        return 16f; // Default size if no SpriteRenderer found
+    }
+    GameObject GetRandom(GameObject[] array)
+    {
+        if (array == null || array.Length == 0) 
+        {
+        return null;      
+        }
+        return array[Random.Range(0, array.Length)];
+    }
+    void CenterMap()
+    {
+        if (placedTiles == null) return;
+        float size = GetTileSize(placedTiles[0, 0]);
+        float offsetX = (width * size) / 2f - size / 2f;
+        float offsetY = (height * size) / 2f - size / 2f;
+        foreach (GameObject tile in placedTiles)
+        {
+            if (tile == null) continue;
+            {
+                tile.transform.position -= new Vector3(offsetX, offsetY, 0);
+            }
         }
     }
 }
