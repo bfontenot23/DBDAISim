@@ -101,6 +101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1506994655196474118}
   - component: {fileID: 7811067148196759257}
+  - component: {fileID: 6487615895803588032}
   m_Layer: 0
   m_Name: Gen_Pallet
   m_TagString: Pallet
@@ -183,3 +184,18 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &6487615895803588032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7926876720742521878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2a5bafaa95e4b344ba3a3da6690b46b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PalletSpawnMarker
+  priority: 3
+  spawnGroup: 
+  weight: 1

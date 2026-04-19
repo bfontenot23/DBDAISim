@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 56347641}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Survivor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -151,7 +151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e18011958a336eb46acce520b100b33b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  speed: 4
+  acceleration: 10
+  deceleration: 30
+  maxSpeed: 4
 --- !u!212 &56347638
 SpriteRenderer:
   serializedVersion: 2
@@ -199,7 +201,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 15
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
   m_Color: {r: 0, g: 0.8078432, b: 0.8196079, a: 1}
@@ -221,8 +223,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 2}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -643,12 +645,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  width: 6
-  height: 6
+  width: 8
+  height: 8
   fillerTiles:
   - {fileID: 7065701874620763055, guid: 830da42e102b72642ae15c48b7d200c4, type: 3}
   gymGenTile: {fileID: 2796376878601124306, guid: ebb3c28bd4d9a1c47810939607a92105, type: 3}
   shackTile: {fileID: 2841567600960484060, guid: 225aa0e2d4eb3064dafd22c4197f86b1, type: 3}
+  mainBuildingTile: {fileID: 2121278481287254773, guid: c0c31735879c54a45bfbcab4bb74910d, type: 3}
   horizontalTiles:
   - {fileID: 1050046329379417215, guid: 8a27a0d5ef1bd9749a195e0cf0f47dbf, type: 3}
   verticalTiles:
@@ -657,6 +660,9 @@ MonoBehaviour:
   bottomRightCorner: {fileID: 6202188625349640496, guid: 57965d679d9038141ae7316f6c13205d, type: 3}
   topLeftCorner: {fileID: 471237337610523522, guid: 4e07467d966e0b74da632b729412efd1, type: 3}
   topRightCorner: {fileID: 6430282808169450390, guid: 901bc3364717fb44ab5e74fa71a828df, type: 3}
+  palletPrefab: {fileID: 2940399495178697954, guid: 344ed9a595d7a6b47a0b7910da635bd1, type: 3}
+  minPallets: 10
+  maxPallets: 20
 --- !u!4 &2051577096
 Transform:
   m_ObjectHideFlags: 0
