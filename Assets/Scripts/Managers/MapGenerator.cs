@@ -23,6 +23,9 @@ public class MapGenerator : MonoBehaviour
     public GameObject topRightCorner;
 
     private GameObject[,] placedTiles;
+    private GameObject mapParent;
+    private GameObject genFillerContainer;
+    
     void Start()
     {
         GenerateMap();
@@ -30,6 +33,13 @@ public class MapGenerator : MonoBehaviour
 
     void GenerateMap()
     {
+        mapParent = new GameObject("Map_Generated");
+        mapParent.transform.position = Vector3.zero;
+        
+        genFillerContainer = new GameObject("GenFiller");
+        genFillerContainer.transform.SetParent(mapParent.transform);
+        genFillerContainer.transform.position = Vector3.zero;
+        
         placedTiles = new GameObject[width, height];
         float size = 16f; 
         int shackX = -1;
@@ -106,7 +116,8 @@ public class MapGenerator : MonoBehaviour
                     continue;
                 }
 
-                placedTiles[x, y] = Instantiate(tilePrefab, position, rotation);
+                GameObject instantiatedTile = Instantiate(tilePrefab, position, rotation, mapParent.transform);
+                placedTiles[x, y] = instantiatedTile;
             }
         }
     }
@@ -129,7 +140,7 @@ public class MapGenerator : MonoBehaviour
                 continue;
             }
             Quaternion rotation = Quaternion.Euler(0, 0, 90 * Random.Range(0, 4));
-            Instantiate(prefab, pos, rotation);
+            Instantiate(prefab, pos, rotation, genFillerContainer.transform);
         }
     }
     GameObject GetRandom(GameObject[] array)
