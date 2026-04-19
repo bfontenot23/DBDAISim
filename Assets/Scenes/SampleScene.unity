@@ -737,13 +737,24 @@ MonoBehaviour:
   width: 48
   height: 48
   mazeTile:
-  - {fileID: 8176151370249435349, guid: 4e85f03c305be264fabfac2971146cca, type: 3}
+  - {fileID: 2695152312621642505, guid: b8ebe023b15a44342a6fa0e994bcafb4, type: 3}
   - {fileID: 6543784197694990684, guid: a91c312f195cf18458a94e36d5af183e, type: 3}
-  fillerTile:
+  - {fileID: 5478627819650943529, guid: 5d96423da19bf7b46ad47fc9e12e238f, type: 3}
+  - {fileID: 8176151370249435349, guid: 4e85f03c305be264fabfac2971146cca, type: 3}
+  - {fileID: 1381224715265227803, guid: 784f401102f57054ebc5102c52287b00, type: 3}
+  - {fileID: 1702032615116638685, guid: 855f750b53887ef4cbfafd891167f767, type: 3}
+  - {fileID: 4897448205815913263, guid: c2d8dd6015e152b4b92df4340c3ff20f, type: 3}
+  - {fileID: 8458428749990029246, guid: 032695af3e6d0cf48a37de24b9ceeba7, type: 3}
   - {fileID: 5579969319542829469, guid: 49b8e962a7ce0c24f915b7fb00f4eb6c, type: 3}
-  - {fileID: 2879365139169244180, guid: e2149d5945597584faa3d07176909dc5, type: 3}
-  specialTile:
+  - {fileID: 5579969319542829469, guid: 49b8e962a7ce0c24f915b7fb00f4eb6c, type: 3}
+  - {fileID: 4210815512344623352, guid: 4c495a0ffecec1d4e9bc9c3f51e3435d, type: 3}
+  - {fileID: 3633499836429273887, guid: 5676db4f51a52584bb2d957142703acf, type: 3}
+  - {fileID: 5432558738717570085, guid: 7079b31a90ec4de43a9e9d753ab0e5e3, type: 3}
   - {fileID: 1772053524837002330, guid: e97fdc7da47481a498a1d226e7b5c455, type: 3}
+  fillerTile:
+  - {fileID: 3377710762524717263, guid: 83faab24fe80fd6428afc596602a9b90, type: 3}
+  specialTile:
+  - {fileID: 2879365139169244180, guid: e2149d5945597584faa3d07176909dc5, type: 3}
   horizontalTiles:
   - {fileID: 1050046329379417215, guid: 8a27a0d5ef1bd9749a195e0cf0f47dbf, type: 3}
   verticalTiles:
