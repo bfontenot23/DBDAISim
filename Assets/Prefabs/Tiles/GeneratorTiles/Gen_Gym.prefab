@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2586097055959083342}
   - component: {fileID: 4921857427650854450}
+  - component: {fileID: 3710518504341031962}
   m_Layer: 0
   m_Name: Gen_Gym
   m_TagString: Untagged
@@ -91,3 +92,31 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &3710518504341031962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2796376878601124306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40516f9c1ff1bb5408fda00c63034ec4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GenerateMazeTile
+  mazeTilePrefabs:
+  - {fileID: 6543784197694990684, guid: a91c312f195cf18458a94e36d5af183e, type: 3}
+  - {fileID: 5478627819650943529, guid: 5d96423da19bf7b46ad47fc9e12e238f, type: 3}
+  - {fileID: 3231462952904474051, guid: bdb19f9b4fe4e5d4095c9b7ef256d621, type: 3}
+  - {fileID: 8176151370249435349, guid: 4e85f03c305be264fabfac2971146cca, type: 3}
+  - {fileID: 1381224715265227803, guid: 784f401102f57054ebc5102c52287b00, type: 3}
+  - {fileID: 647994285487279865, guid: 449f9df53ec496047ac6773ec7a92c09, type: 3}
+  - {fileID: 1702032615116638685, guid: 855f750b53887ef4cbfafd891167f767, type: 3}
+  - {fileID: 4897448205815913263, guid: c2d8dd6015e152b4b92df4340c3ff20f, type: 3}
+  - {fileID: 8458428749990029246, guid: 032695af3e6d0cf48a37de24b9ceeba7, type: 3}
+  - {fileID: 5579969319542829469, guid: 49b8e962a7ce0c24f915b7fb00f4eb6c, type: 3}
+  - {fileID: 1397920840753531009, guid: b8ebe023b15a44342a6fa0e994bcafb4, type: 3}
+  - {fileID: 4210815512344623352, guid: 4c495a0ffecec1d4e9bc9c3f51e3435d, type: 3}
+  - {fileID: 3633499836429273887, guid: 5676db4f51a52584bb2d957142703acf, type: 3}
+  - {fileID: 5432558738717570085, guid: 7079b31a90ec4de43a9e9d753ab0e5e3, type: 3}
+  - {fileID: 1772053524837002330, guid: e97fdc7da47481a498a1d226e7b5c455, type: 3}
