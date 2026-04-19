@@ -734,10 +734,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  wallPrefab: {fileID: 442484797914160985, guid: 3aa183f4043ce404e9e694af62c31d3d, type: 3}
-  width: 50
-  height: 50
-  wallCount: 50
+  width: 48
+  height: 48
+  mazeTile:
+  - {fileID: 8176151370249435349, guid: 4e85f03c305be264fabfac2971146cca, type: 3}
+  - {fileID: 6543784197694990684, guid: a91c312f195cf18458a94e36d5af183e, type: 3}
+  fillerTile:
+  - {fileID: 5579969319542829469, guid: 49b8e962a7ce0c24f915b7fb00f4eb6c, type: 3}
+  - {fileID: 2879365139169244180, guid: e2149d5945597584faa3d07176909dc5, type: 3}
+  specialTile:
+  - {fileID: 1772053524837002330, guid: e97fdc7da47481a498a1d226e7b5c455, type: 3}
+  horizontalTiles:
+  - {fileID: 1050046329379417215, guid: 8a27a0d5ef1bd9749a195e0cf0f47dbf, type: 3}
+  verticalTiles:
+  - {fileID: 4255094358438813136, guid: 5e23f67898820e54da56795b57a65634, type: 3}
+  cornerTiles:
+  - {fileID: 3102089176066063782, guid: 47edecb9d29cb384aaeca6861fed2329, type: 3}
+  - {fileID: 6202188625349640496, guid: 57965d679d9038141ae7316f6c13205d, type: 3}
+  - {fileID: 471237337610523522, guid: 4e07467d966e0b74da632b729412efd1, type: 3}
+  - {fileID: 6430282808169450390, guid: 901bc3364717fb44ab5e74fa71a828df, type: 3}
 --- !u!4 &2051577096
 Transform:
   m_ObjectHideFlags: 0
