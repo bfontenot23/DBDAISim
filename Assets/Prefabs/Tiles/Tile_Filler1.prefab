@@ -458,6 +458,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -102.048
       objectReference: {fileID: 0}
+    - target: {fileID: 6487615895803588032, guid: 1adf479253760994a940382894511531, type: 3}
+      propertyPath: weight
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6487615895803588032, guid: 1adf479253760994a940382894511531, type: 3}
+      propertyPath: priority
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 7926876720742521878, guid: 1adf479253760994a940382894511531, type: 3}
       propertyPath: m_Name
       value: Gen_Pallet

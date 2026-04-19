@@ -21,16 +21,51 @@ public class MapGenerator : MonoBehaviour
     public GameObject bottomRightCorner;
     public GameObject topLeftCorner;
     public GameObject topRightCorner;
+    
+    [Header("Pallet Generation")]
+    public GameObject palletPrefab;
+    [Range(10, 20)]
+    public int minPallets = 10;
+    [Range(10, 20)]
+    public int maxPallets = 20;
 
     private GameObject[,] placedTiles;
     private GameObject mapParent;
     private GameObject genFillerContainer;
     private int gymTileCount = 0;
     private int maxGymTiles;
+    private GeneratePallets palletGenerator;
     
     void Start()
     {
         GenerateMap();
+        SetupPalletGenerator();
+        
+        // Delay pallet generation to ensure all tiles have completed their Awake() and generation
+        if (palletGenerator != null)
+        {
+            Invoke(nameof(TriggerPalletGeneration), 0.5f);
+        }
+    }
+    
+    void SetupPalletGenerator()
+    {
+        if (mapParent == null)
+            return;
+            
+        // Add GeneratePallets component to the map root
+        palletGenerator = mapParent.AddComponent<GeneratePallets>();
+        palletGenerator.palletPrefab = palletPrefab;
+        palletGenerator.minPallets = minPallets;
+        palletGenerator.maxPallets = maxPallets;
+    }
+    
+    void TriggerPalletGeneration()
+    {
+        if (palletGenerator != null)
+        {
+            palletGenerator.OnMapGenerationComplete();
+        }
     }
 
     void GenerateMap()

@@ -223,7 +223,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7, y: 0.7, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -645,8 +645,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  width: 6
-  height: 6
+  width: 8
+  height: 8
   fillerTiles:
   - {fileID: 7065701874620763055, guid: 830da42e102b72642ae15c48b7d200c4, type: 3}
   gymGenTile: {fileID: 2796376878601124306, guid: ebb3c28bd4d9a1c47810939607a92105, type: 3}
@@ -660,6 +660,9 @@ MonoBehaviour:
   bottomRightCorner: {fileID: 6202188625349640496, guid: 57965d679d9038141ae7316f6c13205d, type: 3}
   topLeftCorner: {fileID: 471237337610523522, guid: 4e07467d966e0b74da632b729412efd1, type: 3}
   topRightCorner: {fileID: 6430282808169450390, guid: 901bc3364717fb44ab5e74fa71a828df, type: 3}
+  palletPrefab: {fileID: 2940399495178697954, guid: 344ed9a595d7a6b47a0b7910da635bd1, type: 3}
+  minPallets: 10
+  maxPallets: 20
 --- !u!4 &2051577096
 Transform:
   m_ObjectHideFlags: 0
