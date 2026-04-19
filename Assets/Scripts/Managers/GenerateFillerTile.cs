@@ -34,7 +34,33 @@ public class GenerateFillerTile : MonoBehaviour
         newTile.transform.position = transform.position;
         newTile.transform.rotation = randomRotation;
         
+        Transform mapPrefab = GetMapPrefabParent();
+        if (mapPrefab != null)
+        {
+            newTile.transform.SetParent(mapPrefab);
+        }
+        
         Destroy(gameObject);
+    }
+
+    Transform GetMapPrefabParent()
+    {
+        if (transform.parent != null)
+        {
+            if (transform.parent.name == "GenFiller")
+            {
+                return transform.parent.parent;
+            }
+            else if (transform.parent.name.StartsWith("Gen_Filler"))
+            {
+                Transform potentialMapPrefab = transform.parent.parent;
+                if (potentialMapPrefab != null && potentialMapPrefab.name.Contains("Map"))
+                {
+                    return potentialMapPrefab;
+                }
+            }
+        }
+        return null;
     }
 
     GameObject GetRandomPrefab()
@@ -50,3 +76,4 @@ public class GenerateFillerTile : MonoBehaviour
         return Quaternion.Euler(0, 0, angle);
     }
 }
+

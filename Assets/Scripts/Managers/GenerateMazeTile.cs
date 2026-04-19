@@ -34,7 +34,22 @@ public class GenerateMazeTile : MonoBehaviour
         newTile.transform.position = transform.position;
         newTile.transform.rotation = randomRotation;
         
+        Transform mapPrefab = GetMapPrefabParent();
+        if (mapPrefab != null)
+        {
+            newTile.transform.SetParent(mapPrefab);
+        }
+        
         Destroy(gameObject);
+    }
+
+    Transform GetMapPrefabParent()
+    {
+        if (transform.parent != null && transform.parent.name.Contains("Map"))
+        {
+            return transform.parent;
+        }
+        return null;
     }
 
     GameObject GetRandomPrefab()
@@ -50,3 +65,4 @@ public class GenerateMazeTile : MonoBehaviour
         return Quaternion.Euler(0, 0, angle);
     }
 }
+
