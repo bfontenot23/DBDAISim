@@ -9,6 +9,8 @@ TagManager:
   - Pallet
   - Generator
   - Window
+  - Survivor
+  - Killer
   layers:
   - Default
   - TransparentFX
