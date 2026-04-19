@@ -5,23 +5,23 @@ public class MapGenerator : MonoBehaviour
     [Header("Map Size")]
     public int width = 5;
     public int height = 5;
+ 
+    [Header("Filler Tiles")]
+    public GameObject[] fillerTiles;
 
-    [Header("Tile Prefabs")]
-    public GameObject[] mazeTile;
-    public GameObject[] fillerTile;
-    public GameObject[] specialTile; // Used for size reference
+    [Header ("Generator Tiles")]
+    public GameObject gymGenTile;
+    public GameObject shackTile; 
+
+
+    [Header("Border Tiles")]
     public GameObject[] horizontalTiles;
     public GameObject[] verticalTiles;
-    public GameObject[] cornerTiles;
+    public GameObject bottomLeftCorner;
+    public GameObject bottomRightCorner;
+    public GameObject topLeftCorner;
+    public GameObject topRightCorner;
 
-    enum TileType 
-    { 
-        Border, 
-        Maze, 
-        Filler 
-    }
-
-    private TileType[,] mapLayout;
     private GameObject[,] placedTiles;
     void Start()
     {
@@ -31,31 +31,45 @@ public class MapGenerator : MonoBehaviour
     void GenerateMap()
     {
         placedTiles = new GameObject[width, height];
+        float size = 16f; 
+        int shackX = -1;
+        int shackY = -1;
+            if (width > 2 && height > 2)
+            {
+                shackX = Random.Range(1, width - 1);
+                shackY = Random.Range(1, height - 1);
+            }
+
+        float offsetX = (width - 1) * size / 2f;
+        float offsetY = (height - 1) * size / 2f;
+
         for (int x = 0; x < width; x++)
         {
             for ( int y = 0; y < height; y++)
             {
-                GameObject tilePrefab;                
+                Vector3 position = new Vector3(x * size - offsetX, y * size - offsetY, 0);
+                GameObject tilePrefab = null;
                 Quaternion rotation = Quaternion.identity;
+
                if (x == 0 && y==0) //bottom left corner
                 {
-                    tilePrefab = GetRandom(cornerTiles);
-                    rotation = Quaternion.Euler(0, 0, 0);
+                    tilePrefab = bottomLeftCorner;
+                    rotation = Quaternion.identity;
                 }
                 else if ( x == 0 && y == height - 1) //top left corner
                 {
-                    tilePrefab = GetRandom(cornerTiles);
-                    rotation = Quaternion.Euler(0, 0, 90);
+                    tilePrefab = topLeftCorner;
+                    rotation = Quaternion.identity;
                 }
                 else if (x == width -1  && y == height - 1) //top right corner
                 {
-                    tilePrefab = GetRandom(cornerTiles);
-                    rotation = Quaternion.Euler(0, 0, 180);
+                    tilePrefab = topRightCorner;
+                    rotation = Quaternion.identity;
                 }
                 else if (x == width - 1 && y == 0) //bottom right corner
                 {
-                    tilePrefab = GetRandom(cornerTiles);
-                    rotation = Quaternion.Euler(0, 0, 270);
+                    tilePrefab = bottomRightCorner;
+                    rotation = Quaternion.identity;
                 }
                 else if (y == 0 || y == height -1)
                 {
@@ -67,31 +81,56 @@ public class MapGenerator : MonoBehaviour
                 }
                 else
                 {
-                    float rand = Random.value;
-                    if (rand < 0.6f)
-                        tilePrefab = GetRandom(fillerTile);
-                    else if (rand < 0.9f)
-                        tilePrefab = GetRandom(mazeTile);
-                    
-                    else
-                        tilePrefab = GetRandom(specialTile);
+                    if (x == shackX && y == shackY)
+                    {
+                        tilePrefab = shackTile;
+                    }
+                    else  
+                    {   
+                        float rand = Random.value;
+                        if (rand < 0.75f )
+                        {
+                            spawnFiller4(position);
+                            continue;
+                        }
+                        else
+                        {
+                            tilePrefab = gymGenTile;
+                        }
+                    }
                 }
-                float tileSize = 16f;
-                Vector3 position = new Vector3(x * tileSize, y * tileSize, 0);
+
+                if (tilePrefab == null)
+                {
+                    Debug.LogError("No tile prefab assigned for position (" + x + ", " + y + ").");
+                    continue;
+                }
+
                 placedTiles[x, y] = Instantiate(tilePrefab, position, rotation);
             }
         }
-        CenterMap();
     }
-
-    float GetTileSize(GameObject prefab)
+    void spawnFiller4(Vector3 center)
     {
-        SpriteRenderer sr = prefab.GetComponent<SpriteRenderer>();
-        if (sr != null)
+        float offset = 16f / 4f;
+        Vector3[] positions = new Vector3[]
         {
-            return sr.bounds.size.x; // Assuming square tiles
+            center + new Vector3(-offset, offset, 0),
+            center + new Vector3(offset, offset, 0),
+            center + new Vector3(-offset, -offset, 0),
+            center + new Vector3(offset, -offset, 0)
+        };
+        foreach (Vector3 pos in positions)
+        {
+            GameObject prefab = GetRandom(fillerTiles);
+            if (prefab == null)
+            {
+               Debug.LogError("Filler tiles array is empty or null.");
+                continue;
+            }
+            Quaternion rotation = Quaternion.Euler(0, 0, 90 * Random.Range(0, 4));
+            Instantiate(prefab, pos, rotation);
         }
-        return 16f; // Default size if no SpriteRenderer found
     }
     GameObject GetRandom(GameObject[] array)
     {
@@ -100,19 +139,5 @@ public class MapGenerator : MonoBehaviour
         return null;      
         }
         return array[Random.Range(0, array.Length)];
-    }
-    void CenterMap()
-    {
-        if (placedTiles == null) return;
-        float size = GetTileSize(placedTiles[0, 0]);
-        float offsetX = (width * size) / 2f - size / 2f;
-        float offsetY = (height * size) / 2f - size / 2f;
-        foreach (GameObject tile in placedTiles)
-        {
-            if (tile == null) continue;
-            {
-                tile.transform.position -= new Vector3(offsetX, offsetY, 0);
-            }
-        }
     }
 }
