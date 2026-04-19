@@ -14,7 +14,7 @@ public class PlayerController : MonoBehaviour
     
     void Update()
     {
-        if (PalletController.IsPlayerLocked(this))
+        if (PalletController.IsPlayerLocked(this) || Vaultable.IsPlayerVaulting(this))
         {
             return;
         }
