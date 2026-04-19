@@ -645,13 +645,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  width: 2
-  height: 2
+  width: 6
+  height: 6
   fillerTiles:
   - {fileID: 7065701874620763055, guid: 830da42e102b72642ae15c48b7d200c4, type: 3}
   gymGenTile: {fileID: 2796376878601124306, guid: ebb3c28bd4d9a1c47810939607a92105, type: 3}
   shackTile: {fileID: 2841567600960484060, guid: 225aa0e2d4eb3064dafd22c4197f86b1, type: 3}
-  mainBuildingTile: {fileID: 0}
+  mainBuildingTile: {fileID: 2121278481287254773, guid: c0c31735879c54a45bfbcab4bb74910d, type: 3}
   horizontalTiles:
   - {fileID: 1050046329379417215, guid: 8a27a0d5ef1bd9749a195e0cf0f47dbf, type: 3}
   verticalTiles:
