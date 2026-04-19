@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1523291796744691690}
   - component: {fileID: 6898594538860672727}
+  - component: {fileID: 5929225181346411292}
   m_Layer: 0
   m_Name: Gen_Shack
   m_TagString: Untagged
@@ -91,3 +92,17 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &5929225181346411292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2841567600960484060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40516f9c1ff1bb5408fda00c63034ec4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GenerateMazeTile
+  mazeTilePrefabs:
+  - {fileID: 2879365139169244180, guid: e2149d5945597584faa3d07176909dc5, type: 3}
