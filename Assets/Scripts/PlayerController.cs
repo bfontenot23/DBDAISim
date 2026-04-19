@@ -14,6 +14,11 @@ public class PlayerController : MonoBehaviour
     
     void Update()
     {
+        if (PalletController.IsPlayerLocked(this))
+        {
+            return;
+        }
+        
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
