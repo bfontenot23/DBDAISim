@@ -29,22 +29,32 @@ public class MapGenerator : MonoBehaviour
     [Range(10, 20)]
     public int maxPallets = 20;
 
+    [Header("Generator Generation")]
+    public GameObject generatorPrefab;
+
     private GameObject[,] placedTiles;
     private GameObject mapParent;
     private GameObject genFillerContainer;
     private int gymTileCount = 0;
     private int maxGymTiles;
     private GeneratePallets palletGenerator;
+
+    private GenerateGenerators generatorSpawner;
     
     void Start()
     {
         GenerateMap();
         SetupPalletGenerator();
+        SetupGeneratorSpawner();
         
         // Delay pallet generation to ensure all tiles have completed their Awake() and generation
         if (palletGenerator != null)
         {
             Invoke(nameof(TriggerPalletGeneration), 0.5f);
+        }
+        if (generatorSpawner != null)
+        {
+            Invoke(nameof(TriggerGeneratorGeneration), 0.5f);
         }
     }
     
@@ -65,6 +75,21 @@ public class MapGenerator : MonoBehaviour
         if (palletGenerator != null)
         {
             palletGenerator.OnMapGenerationComplete();
+        }
+    }
+
+    void SetupGeneratorSpawner()
+    {
+        if (mapParent == null)
+            return;
+        generatorSpawner = mapParent.AddComponent<GenerateGenerators>();
+        generatorSpawner.generatorPrefab = generatorPrefab; 
+    }
+    void TriggerGeneratorGeneration()
+    {
+        if (generatorSpawner != null)
+        {
+            generatorSpawner.OnMapGenerationComplete();
         }
     }
 

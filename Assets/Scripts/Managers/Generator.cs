@@ -9,6 +9,7 @@ public class Generator : MonoBehaviour
     public float maxProgress = 100f;
     public float baseRepairSpeed = 1f;
     private List<GameObject> repairingPlayers = new List<GameObject>();
+    private HashSet<PlayerController> playersInRange = new HashSet<PlayerController>();
     private bool isComplete = false;
 
     [Header("Regression")]
@@ -21,6 +22,20 @@ public class Generator : MonoBehaviour
     void Update()
     {
         if (isComplete) return;
+
+        Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
+        
+        foreach (var player in playersInRange)
+        {
+            if (Input.GetMouseButton(0))
+            {
+                StartRepair(player.gameObject);
+            }
+            else
+            {
+                StopRepair(player.gameObject);
+            }
+        }
 
         int n = repairingPlayers.Count;
         //repairing
@@ -45,7 +60,7 @@ public class Generator : MonoBehaviour
                 CompleteGeneration();
             }
         }
-        else if (isRegressing && !isComplete)
+        else if (isRegressing)
         {
             progress -= regressionSpeed * Time.deltaTime; 
         }
@@ -57,6 +72,23 @@ public class Generator : MonoBehaviour
         if (survivors <= 1) return 1f;
         float penalty = 0.15f * (survivors - 1);
         return Mathf.Clamp01(1f - penalty);
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.TryGetComponent(out PlayerController player))
+        {
+            playersInRange.Add(player);
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.TryGetComponent(out PlayerController player))
+        {
+            playersInRange.Remove(player);
+            StopRepair(other.gameObject);
+        }
     }
 
     public void StartRepair(GameObject player)
@@ -78,6 +110,7 @@ public class Generator : MonoBehaviour
     void CompleteGeneration()
     {
         isComplete = true;
+        isRegressing = false;
         progress = maxProgress;
         Debug.Log("Generator complete!");
         repairingPlayers.Clear();
@@ -87,6 +120,7 @@ public class Generator : MonoBehaviour
 
     public void StartRegression()
     {
+        if (isComplete) return;
         isRegressing = true;
         repairSinceRegression = 0f;
     }
