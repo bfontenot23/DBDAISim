@@ -162,8 +162,8 @@ MonoBehaviour:
   leftVaultZone: {fileID: 7409051632445533923}
   rightVaultZone: {fileID: 4578261204438899282}
   slowVaultDuration: 2
-  mediumVaultDuration: 1.1
-  fastVaultDuration: 1.1
+  mediumVaultDuration: 1
+  fastVaultDuration: 1
   killerVaultDuration: 1.7
   mediumVaultThreshold: 1
   fastVaultThreshold: 4
