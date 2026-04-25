@@ -668,6 +668,7 @@ MonoBehaviour:
   palletPrefab: {fileID: 2940399495178697954, guid: 344ed9a595d7a6b47a0b7910da635bd1, type: 3}
   minPallets: 10
   maxPallets: 20
+  generatorPrefab: {fileID: 693407683140668538, guid: 55f1a47913ccb8a43b65b54fea45c8ca, type: 3}
 --- !u!4 &2051577096
 Transform:
   m_ObjectHideFlags: 0
