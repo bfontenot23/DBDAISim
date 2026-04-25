@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5112176288463307013}
   - component: {fileID: 2933216048137340589}
-  - component: {fileID: 2368421325507702866}
+  - component: {fileID: 6366866367262757472}
   m_Layer: 0
   m_Name: Gen_Main
   m_TagString: Untagged
@@ -92,7 +92,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &2368421325507702866
+--- !u!114 &6366866367262757472
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,8 +101,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 2121278481287254773}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40516f9c1ff1bb5408fda00c63034ec4, type: 3}
+  m_Script: {fileID: 11500000, guid: 95f9fb4329b082e4f8b5f397901fba80, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GenerateMazeTile
+  m_EditorClassIdentifier: Assembly-CSharp::GenerateMain
   mazeTilePrefabs:
   - {fileID: 4211361210671165863, guid: e14c2dfe02e41f74eb6edc859ab82481, type: 3}

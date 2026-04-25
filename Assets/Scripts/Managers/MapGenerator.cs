@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
 {
+    [Header("Multi-Map Configuration")]
+    public int numberOfMaps = 1;
+    public float mapSpacing = 2f;
+    
     [Header("Map Size")]
     public int width = 5;
     public int height = 5;
@@ -38,19 +42,63 @@ public class MapGenerator : MonoBehaviour
     private int gymTileCount = 0;
     private int maxGymTiles;
     private GeneratePallets palletGenerator;
-
+    private GameObject multiMapContainer;
     private GenerateGenerators generatorSpawner;
     
     void Start()
     {
-        GenerateMap();
-        SetupPalletGenerator();
-        SetupGeneratorSpawner();
-        
-        // Delay pallet generation to ensure all tiles have completed their Awake() and generation
-        if (palletGenerator != null)
+        if (numberOfMaps <= 1)
         {
-            Invoke(nameof(TriggerPalletGeneration), 0.5f);
+            GenerateMap(Vector3.zero);
+            SetupPalletGenerator();
+            SetupGeneratorSpawner();
+            // Delay pallet generation to ensure all tiles have completed their Awake() and generation
+            if (palletGenerator != null)
+            {
+                Invoke(nameof(TriggerPalletGeneration), 0.5f);
+            }
+        }
+        else
+        {
+            GenerateMultipleMaps();
+        }
+    }
+    
+    void GenerateMultipleMaps()
+    {
+        multiMapContainer = new GameObject("MultiMap_Container");
+        multiMapContainer.transform.position = Vector3.zero;
+        
+        // Calculate grid dimensions
+        int[] gridDims = CalculateGridDimensions(numberOfMaps);
+        int gridWidth = gridDims[0];
+        int gridHeight = gridDims[1];
+        
+        float mapWidth = width * 16f;
+        float mapHeight = height * 16f;
+        float spacingX = mapSpacing * 16f;
+        float spacingY = mapSpacing * 16f;
+        
+        int mapsGenerated = 0;
+        
+        // Generate maps in grid pattern, Map_0 centered at (0,0), expanding right and downward
+        for (int row = 0; row < gridHeight; row++)
+        {
+            for (int col = 0; col < gridWidth; col++)
+            {
+                if (mapsGenerated >= numberOfMaps)
+                    break;
+                    
+                if (ShouldSkipPosition(col, row, gridWidth, gridHeight, numberOfMaps))
+                    continue;
+                
+                float xPos = col * (mapWidth + spacingX);
+                float yPos = -row * (mapHeight + spacingY);
+                Vector3 mapPosition = new Vector3(xPos, yPos, 0);
+                
+                GenerateMap(mapPosition, mapsGenerated);
+                mapsGenerated++;
+            }
         }
         if (generatorSpawner != null)
         {
@@ -58,16 +106,63 @@ public class MapGenerator : MonoBehaviour
         }
     }
     
-    void SetupPalletGenerator()
+    int[] CalculateGridDimensions(int numMaps)
     {
-        if (mapParent == null)
+        if (numMaps <= 1)
+            return new int[] { 1, 1 };
+        
+        // Calculate grid dimensions to prefer square-ish layouts
+        int gridWidth = Mathf.CeilToInt(Mathf.Sqrt(numMaps));
+        int gridHeight = Mathf.CeilToInt((float)numMaps / gridWidth);
+        
+        return new int[] { gridWidth, gridHeight };
+    }
+    
+    bool ShouldSkipPosition(int col, int row, int gridWidth, int gridHeight, int totalMaps)
+    {
+        int totalGridPositions = gridWidth * gridHeight;
+        if (totalGridPositions <= totalMaps)
+            return false;
+        
+        // Skip positions at the end (bottom-right corner)
+        int positionIndex = row * gridWidth + col;
+        return positionIndex >= totalMaps;
+    }
+    
+    void SetupPalletGenerator(GameObject mapRoot = null)
+    {
+        GameObject targetMap = mapRoot != null ? mapRoot : mapParent;
+        
+        if (targetMap == null)
             return;
             
         // Add GeneratePallets component to the map root
-        palletGenerator = mapParent.AddComponent<GeneratePallets>();
-        palletGenerator.palletPrefab = palletPrefab;
-        palletGenerator.minPallets = minPallets;
-        palletGenerator.maxPallets = maxPallets;
+        GeneratePallets generator = targetMap.AddComponent<GeneratePallets>();
+        generator.palletPrefab = palletPrefab;
+        generator.minPallets = minPallets;
+        generator.maxPallets = maxPallets;
+        
+        if (numberOfMaps <= 1)
+        {
+            palletGenerator = generator;
+        }
+        else
+        {
+            // For multiple maps, trigger immediately for each map
+            Invoke(nameof(TriggerPalletGenerationForMap), 0.5f);
+        }
+    }
+    
+    void TriggerPalletGenerationForMap()
+    {
+        if (multiMapContainer != null)
+        {
+            GeneratePallets[] generators = multiMapContainer.GetComponentsInChildren<GeneratePallets>();
+            foreach (var gen in generators)
+            {
+                gen.OnMapGenerationComplete();
+            }
+        }
     }
     
     void TriggerPalletGeneration()
@@ -93,14 +188,20 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    void GenerateMap()
+    void GenerateMap(Vector3 mapOffset, int mapIndex = 0)
     {
-        mapParent = new GameObject("Map_Generated");
+        string mapName = numberOfMaps > 1 ? $"Map_{mapIndex}" : "Map_Generated";
+        mapParent = new GameObject(mapName);
         mapParent.transform.position = Vector3.zero;
+        
+        if (multiMapContainer != null)
+        {
+            mapParent.transform.SetParent(multiMapContainer.transform);
+        }
         
         genFillerContainer = new GameObject("GenFiller");
         genFillerContainer.transform.SetParent(mapParent.transform);
-        genFillerContainer.transform.position = Vector3.zero;
+        genFillerContainer.transform.localPosition = Vector3.zero;
         
         gymTileCount = 0;
         float[] weights = { 0.5f, 0.3f, 0.2f };
@@ -213,6 +314,15 @@ public class MapGenerator : MonoBehaviour
                 GameObject instantiatedTile = Instantiate(tilePrefab, position, rotation, mapParent.transform);
                 placedTiles[x, y] = instantiatedTile;
             }
+        }
+        
+        // Move the parent to the correct grid position after all tiles are placed as children
+        mapParent.transform.position = mapOffset;
+        
+        // Setup pallet generator for this map if in multi-map mode
+        if (numberOfMaps > 1)
+        {
+            SetupPalletGenerator(mapParent);
         }
     }
     void spawnFiller4(Vector3 center)
