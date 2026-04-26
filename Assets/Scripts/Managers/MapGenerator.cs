@@ -144,11 +144,6 @@ public class MapGenerator : MonoBehaviour
         {
             palletGenerator = generator;
         }
-        else
-        {
-            // For multiple maps, trigger immediately for each map
-            Invoke(nameof(TriggerPalletGenerationForMap), 0.5f);
-        }
     }
     
     void TriggerPalletGenerationForMap()
