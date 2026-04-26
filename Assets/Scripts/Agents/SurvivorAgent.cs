@@ -396,6 +396,13 @@ public class SurvivorAgent : Agent
         EndEpisode();
     }
     
+    public void PenalizeTimeLimit()
+    {
+        // Large penalty for not escaping within time limit
+        AddReward(-5.0f);
+        EndEpisode();
+    }
+    
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;

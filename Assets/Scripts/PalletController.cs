@@ -31,6 +31,10 @@ public class PalletController : MonoBehaviour
     private float zoneResetTimer = 0f;
     private const float zoneResetDelay = 1f;
     
+    // Break zone tracking for killer
+    private KillerAgent killerInLeftBreakZone;
+    private KillerAgent killerInRightBreakZone;
+    
     void Start()
     {
         if (standingObject != null)
@@ -73,7 +77,21 @@ public class PalletController : MonoBehaviour
     public void OnPlayerEnterZone(MonoBehaviour player, PalletThrowZone.ThrowSide side)
     {
         if (isDropped)
+        {
+            // If pallet is dropped, allow killer to break it
+            if (player.CompareTag("Killer"))
+            {
+                if (side == PalletThrowZone.ThrowSide.Left)
+                {
+                    playerInLeftZone = player;
+                }
+                else if (side == PalletThrowZone.ThrowSide.Right)
+                {
+                    playerInRightZone = player;
+                }
+            }
             return;
+        }
         
         if (!player.CompareTag("Survivor"))
             return;
@@ -123,6 +141,37 @@ public class PalletController : MonoBehaviour
         }
     }
     
+    public void OnKillerEnterBreakZone(KillerAgent killer, BreakZone.BreakSide side)
+    {
+        if (!isDropped)
+            return;
+            
+        if (side == BreakZone.BreakSide.Left)
+        {
+            killerInLeftBreakZone = killer;
+            Debug.Log("[PalletController] Killer entered left break zone");
+        }
+        else if (side == BreakZone.BreakSide.Right)
+        {
+            killerInRightBreakZone = killer;
+            Debug.Log("[PalletController] Killer entered right break zone");
+        }
+    }
+    
+    public void OnKillerExitBreakZone(KillerAgent killer, BreakZone.BreakSide side)
+    {
+        if (side == BreakZone.BreakSide.Left && killerInLeftBreakZone == killer)
+        {
+            killerInLeftBreakZone = null;
+            Debug.Log("[PalletController] Killer exited left break zone");
+        }
+        else if (side == BreakZone.BreakSide.Right && killerInRightBreakZone == killer)
+        {
+            killerInRightBreakZone = null;
+            Debug.Log("[PalletController] Killer exited right break zone");
+        }
+    }
+    
     private void CheckPlayerVelocity(MonoBehaviour player, ref bool zoneActive)
     {
         if (player == null)
@@ -163,18 +212,66 @@ public class PalletController : MonoBehaviour
         return false;
     }
     
+    public bool TryBreakPalletFromInteraction(GameObject interactingObject)
+    {
+        Debug.Log($"[PalletController] TryBreakPallet called, isDropped: {isDropped}");
+        
+        if (!isDropped)
+        {
+            Debug.Log("[PalletController] Pallet not dropped, cannot break");
+            return false;
+        }
+            
+        KillerAgent killer = interactingObject.GetComponent<KillerAgent>();
+        if (killer == null)
+        {
+            Debug.Log("[PalletController] Not a killer agent");
+            return false;
+        }
+        
+        Debug.Log($"[PalletController] Killer found, checking zones. Left: {killerInLeftBreakZone != null}, Right: {killerInRightBreakZone != null}");
+        
+        // Check if killer is in either break zone
+        Transform breakPosition = null;
+        if (killer == killerInLeftBreakZone && leftDropPosition != null)
+        {
+            breakPosition = leftDropPosition;
+            Debug.Log("[PalletController] Breaking from left position");
+        }
+        else if (killer == killerInRightBreakZone && rightDropPosition != null)
+        {
+            breakPosition = rightDropPosition;
+            Debug.Log("[PalletController] Breaking from right position");
+        }
+        
+        if (breakPosition != null)
+        {
+            // Start pallet breaking coroutine
+            killer.StartCoroutine(killer.PerformPalletBreak(this, breakPosition));
+            return true;
+        }
+        
+        Debug.Log("[PalletController] No valid break position found");
+        return false;
+    }
+    
+    public void DestroyPallet()
+    {
+        // Destroy the entire pallet GameObject (parent of parent of hitboxes)
+        // The hitboxes are children of droppedObject, which is child of this GameObject
+        Destroy(gameObject);
+    }
+    
     public bool TryDropPalletFromInteraction(GameObject interactingObject)
     {
+        // Only survivors can drop pallets
         MonoBehaviour player = interactingObject.GetComponent<SurvivorAgent>();
         if (player == null)
         {
             player = interactingObject.GetComponent<PlayerController>();
         }
-        if (player == null)
-        {
-            player = interactingObject.GetComponent<KillerAgent>();
-        }
         
+        // Don't allow killer to drop pallets
         if (player != null)
         {
             return TryDropPallet(player);

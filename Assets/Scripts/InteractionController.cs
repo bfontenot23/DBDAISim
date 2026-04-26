@@ -55,6 +55,30 @@ public class InteractionController : MonoBehaviour
         
         Debug.Log("[InteractionController] TryInteract called");
         
+        // Check if this is a killer trying to kick a generator or break a pallet
+        if (gameObject.CompareTag("Killer"))
+        {
+            // Try to break pallet first
+            PalletController[] pallets = FindObjectsByType<PalletController>(FindObjectsSortMode.None);
+            Debug.Log($"[InteractionController] Killer found {pallets.Length} pallets");
+            foreach (PalletController pallet in pallets)
+            {
+                if (pallet.TryBreakPalletFromInteraction(gameObject))
+                {
+                    Debug.Log("[InteractionController] Killer started breaking pallet");
+                    return;
+                }
+            }
+            
+            // If no pallet to break, try to kick generator
+            if (currentGenerator != null)
+            {
+                currentGenerator.KickGenerator(gameObject);
+                Debug.Log("[InteractionController] Killer kicked generator");
+                return;
+            }
+        }
+        
         // Try to vault first
         Vaultable[] vaultables = FindObjectsByType<Vaultable>(FindObjectsSortMode.None);
         Debug.Log($"[InteractionController] Found {vaultables.Length} vaultables");
@@ -68,9 +92,9 @@ public class InteractionController : MonoBehaviour
         }
         
         // Try to drop pallet
-        PalletController[] pallets = FindObjectsByType<PalletController>(FindObjectsSortMode.None);
-        Debug.Log($"[InteractionController] Found {pallets.Length} pallets");
-        foreach (PalletController pallet in pallets)
+        PalletController[] palletsForDrop = FindObjectsByType<PalletController>(FindObjectsSortMode.None);
+        Debug.Log($"[InteractionController] Found {palletsForDrop.Length} pallets");
+        foreach (PalletController pallet in palletsForDrop)
         {
             if (pallet.TryDropPalletFromInteraction(gameObject))
             {
@@ -78,7 +102,6 @@ public class InteractionController : MonoBehaviour
                 return;
             }
         }
-        
         
         Debug.Log("[InteractionController] No valid interaction found");
     }

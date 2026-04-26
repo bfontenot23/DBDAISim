@@ -248,6 +248,7 @@ GameObject:
   - component: {fileID: 1728527080494315384}
   - component: {fileID: 5512145632467130920}
   - component: {fileID: 8489832355117118014}
+  - component: {fileID: 6999616581144847169}
   m_Layer: 0
   m_Name: RightVaultOrKick
   m_TagString: Untagged
@@ -328,6 +329,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 280265f3888bafd479f37440ff4b4327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VaultZone
+  side: 1
+--- !u!114 &6999616581144847169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4578261204438899282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75508f0a5444b304b8fdf74b39722d49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakZone
   side: 1
 --- !u!1 &6975776218444530871
 GameObject:
@@ -478,6 +492,7 @@ GameObject:
   - component: {fileID: 274821317071868113}
   - component: {fileID: 6019820529969727684}
   - component: {fileID: 3298383005660407855}
+  - component: {fileID: 4755976807910976374}
   m_Layer: 0
   m_Name: LeftVaultOrKick
   m_TagString: Untagged
@@ -558,6 +573,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 280265f3888bafd479f37440ff4b4327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VaultZone
+  side: 0
+--- !u!114 &4755976807910976374
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7409051632445533923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75508f0a5444b304b8fdf74b39722d49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakZone
   side: 0
 --- !u!1 &8167828003035327530
 GameObject:

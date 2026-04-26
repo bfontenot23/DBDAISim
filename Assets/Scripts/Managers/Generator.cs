@@ -65,11 +65,23 @@ public class Generator : MonoBehaviour
         {
             float efficiency = GetEfficiency(n);
             float totalRepairSpeed = n * efficiency * baseRepairSpeed;
-            progress += totalRepairSpeed * Time.deltaTime;
+            float progressThisFrame = totalRepairSpeed * Time.deltaTime;
+            progress += progressThisFrame;
+            
+            // Penalize killer for generator progress
+            GameObject killer = GameObject.FindGameObjectWithTag("Killer");
+            if (killer != null)
+            {
+                KillerAgent killerAgent = killer.GetComponent<KillerAgent>();
+                if (killerAgent != null)
+                {
+                    killerAgent.PenalizeGeneratorProgress(progressThisFrame);
+                }
+            }
            
             if (isRegressing)
             {
-                repairSinceRegression += totalRepairSpeed * Time.deltaTime;
+                repairSinceRegression += progressThisFrame;
                 if (repairSinceRegression >= requiredRepairToStopRegression)
                 {
                     isRegressing = false;
@@ -210,6 +222,32 @@ public class Generator : MonoBehaviour
         if (isComplete) return;
         isRegressing = true;
         repairSinceRegression = 0f;
+    }
+    
+    public void KickGenerator(GameObject kicker)
+    {
+        if (isComplete) return;
+        
+        // Can't kick a generator with no progress
+        if (progress <= 0f)
+        {
+            Debug.Log("[Generator] Cannot kick generator with 0 progress");
+            return;
+        }
+        
+        // Can't kick a generator that's already regressing
+        if (isRegressing)
+        {
+            Debug.Log("[Generator] Cannot kick generator that is already regressing");
+            return;
+        }
+        
+        // Lock the killer for 2.34 seconds, then start regression
+        KillerAgent killerAgent = kicker.GetComponent<KillerAgent>();
+        if (killerAgent != null)
+        {
+            killerAgent.StartCoroutine(killerAgent.PerformGeneratorKick(this));
+        }
     }
 
 }
