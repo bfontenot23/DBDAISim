@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,10 +19,41 @@ public class Generator : MonoBehaviour
     private float repairSinceRegression = 0f;
     public float requiredRepairToStopRegression = 5f;
 
+    [Header("UI")]
+    private Slider progressBar; 
+    private GameObject progressCanvas; 
+    private Transform uiTransform;
+
+    void Start()
+    {
+        progressBar = GetComponentInChildren<Slider>();
+        if (progressBar != null)
+        {
+            progressCanvas = progressBar.transform.parent.gameObject; 
+            progressCanvas.SetActive(false);
+
+            uiTransform = progressCanvas.transform; 
+        }
+    }
+
+
+
     // Update is called once per frame
     void Update()
     {
-        if (isComplete) return;
+        if (isComplete)
+        {
+            if (progressCanvas != null)
+                progressCanvas.SetActive(true);
+
+            if (progressBar != null)
+                progressBar.value = maxProgress;
+            
+            if (uiTransform != null)
+                uiTransform.rotation = Quaternion.identity; 
+            
+            return;
+        }
 
         Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
         
@@ -65,6 +97,27 @@ public class Generator : MonoBehaviour
             progress -= regressionSpeed * Time.deltaTime; 
         }
         progress = Mathf.Clamp(progress, 0f, maxProgress);
+        if (progressBar != null)
+        {
+            progressBar.value = progress; 
+        }
+
+        if (progressCanvas != null)
+        {
+            if (isComplete)
+            {
+                progressCanvas.SetActive(true);
+            }
+            else
+            {
+                progressCanvas.SetActive(repairingPlayers.Count > 0);
+            }
+        }
+
+        if (uiTransform != null)
+        {
+            uiTransform.rotation = Quaternion.identity; 
+        }
     }
 
     float GetEfficiency(int survivors)
@@ -79,6 +132,7 @@ public class Generator : MonoBehaviour
         if (other.TryGetComponent(out PlayerController player))
         {
             playersInRange.Add(player);
+        
         }
     }
 
@@ -87,7 +141,11 @@ public class Generator : MonoBehaviour
         if (other.TryGetComponent(out PlayerController player))
         {
             playersInRange.Remove(player);
-            StopRepair(other.gameObject);
+            StopRepair(player.gameObject);
+        }
+        if (playersInRange.Count == 0 && progressCanvas != null)
+        {
+            progressCanvas.SetActive(false);
         }
     }
 
@@ -114,6 +172,11 @@ public class Generator : MonoBehaviour
         progress = maxProgress;
         Debug.Log("Generator complete!");
         repairingPlayers.Clear();
+
+        if (progressCanvas != null)
+        {
+            progressCanvas.SetActive(true);
+        }
         // Implement generator completion logic here (e.g., open exit, trigger events)
 
     }
