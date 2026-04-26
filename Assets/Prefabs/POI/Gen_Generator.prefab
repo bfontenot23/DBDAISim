@@ -101,7 +101,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3028859478221501838}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0888060c1b40bbd4d9c66216e0063792, type: 3}
+  m_Script: {fileID: 11500000, guid: 362453e75557e914c992d44ff3e5548d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeneratorSpawnMarker
   priority: 3

@@ -1385,6 +1385,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1773305084400556718}
     m_Modifications:
+    - target: {fileID: 2611666498722892087, guid: fd0109b73a5b7b5458958d7058a0894c, type: 3}
+      propertyPath: priority
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3028859478221501838, guid: fd0109b73a5b7b5458958d7058a0894c, type: 3}
       propertyPath: m_Name
       value: Gen_Generator

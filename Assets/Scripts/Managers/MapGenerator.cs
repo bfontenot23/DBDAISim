@@ -54,9 +54,9 @@ public class MapGenerator : MonoBehaviour
             SetupGeneratorSpawner();
             // Delay pallet generation to ensure all tiles have completed their Awake() and generation
             if (palletGenerator != null)
-            {
                 Invoke(nameof(TriggerPalletGeneration), 0.5f);
-            }
+            if (generatorSpawner != null)
+                Invoke(nameof(TriggerGeneratorGeneration), 0.5f);
         }
         else
         {
@@ -100,10 +100,8 @@ public class MapGenerator : MonoBehaviour
                 mapsGenerated++;
             }
         }
-        if (generatorSpawner != null)
-        {
-            Invoke(nameof(TriggerGeneratorGeneration), 0.5f);
-        }
+        Invoke(nameof(TriggerPalletGenerationForMap), 0.5f);
+        Invoke(nameof(TriggerGeneratorGenerationForMap), 0.5f);
     }
     
     int[] CalculateGridDimensions(int numMaps)
@@ -173,13 +171,35 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    void SetupGeneratorSpawner()
+    void SetupGeneratorSpawner(GameObject mapRoot = null)
     {
-        if (mapParent == null)
+        GameObject targetMap = mapRoot != null ? mapRoot : mapParent;
+
+        if (targetMap == null)
             return;
-        generatorSpawner = mapParent.AddComponent<GenerateGenerators>();
-        generatorSpawner.generatorPrefab = generatorPrefab; 
+
+        GenerateGenerators spawner = targetMap.AddComponent<GenerateGenerators>();
+        spawner.generatorPrefab = generatorPrefab;
+        spawner.generatorCount = 7;
+
+        if (numberOfMaps <= 1)
+        {
+            generatorSpawner = spawner;
+        }
     }
+
+    void TriggerGeneratorGenerationForMap()
+    {
+        if (multiMapContainer != null)
+        {
+            GenerateGenerators[] spawners = multiMapContainer.GetComponentsInChildren<GenerateGenerators>();
+            foreach (var spawner in spawners)
+            {
+                spawner.OnMapGenerationComplete();
+            }
+        }
+    }
+
     void TriggerGeneratorGeneration()
     {
         if (generatorSpawner != null)
@@ -323,6 +343,7 @@ public class MapGenerator : MonoBehaviour
         if (numberOfMaps > 1)
         {
             SetupPalletGenerator(mapParent);
+            SetupGeneratorSpawner(mapParent);
         }
     }
     void spawnFiller4(Vector3 center)

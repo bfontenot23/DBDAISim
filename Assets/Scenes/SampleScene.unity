@@ -648,10 +648,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b094fc5884ad447083c6f3c35757869, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapGenerator
-  numberOfMaps: 3
+  numberOfMaps: 10
   mapSpacing: 2
-  width: 6
-  height: 6
+  width: 8
+  height: 8
   fillerTiles:
   - {fileID: 7065701874620763055, guid: 830da42e102b72642ae15c48b7d200c4, type: 3}
   gymGenTile: {fileID: 2796376878601124306, guid: ebb3c28bd4d9a1c47810939607a92105, type: 3}
