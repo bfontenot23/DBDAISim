@@ -3,6 +3,13 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 
+public enum SurvivorHealthState
+{
+    Healthy = 0,
+    Injured = 1,
+    Dying = 2
+}
+
 public class SurvivorAgent : Agent
 {
     [Header("Movement Settings")]
@@ -22,16 +29,38 @@ public class SurvivorAgent : Agent
     public GameObject scratchMarkPrefab;
     public float scratchMarkSpawnInterval = 1f;
     
+    [Header("Health State")]
+    public SurvivorHealthState healthState = SurvivorHealthState.Healthy;
+    
+    [Header("Speed Boost Settings")]
+    public float speedBoostMaxSpeed = 6.6f;
+    public float speedBoostDuration = 1.8f;
+    
+    [Header("Dying State Settings")]
+    public float dyingStateMaxSpeed = 0.7f;
+    
+    [Header("Elimination Settings")]
+    public int downCount = 0;
+    public int maxDownsBeforeElimination = 3;
+    public bool isEliminated = false;
+    
     private Rigidbody2D rb;
+    private SpriteRenderer spriteRenderer;
     private InteractionController interactionController;
+    private Transform environmentRoot;
     private bool wasInteractPressed = false;
     private float episodeTimer = 0f;
     private float scratchMarkTimer = 0f;
     private bool wasMovingLastFrame = false;
     
+    private bool hasSpeedBoost = false;
+    private float speedBoostTimer = 0f;
+    
     private float storedHorizontal = 0f;
     private float storedVertical = 0f;
     private int storedInteractAction = 0;
+    
+    private ChaseManager chaseManager;
     
     public override void Initialize()
     {
@@ -41,10 +70,36 @@ public class SurvivorAgent : Agent
             Debug.LogError("[SurvivorAgent] Rigidbody2D component not found!");
         }
         
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+        {
+            Debug.LogWarning("[SurvivorAgent] SpriteRenderer component not found!");
+        }
+        
         interactionController = GetComponent<InteractionController>();
         if (interactionController == null)
         {
             interactionController = gameObject.AddComponent<InteractionController>();
+        }
+        
+        // Find the environment root (Map_X parent)
+        environmentRoot = transform.parent;
+        if (environmentRoot == null)
+        {
+            Debug.LogError("[SurvivorAgent] No parent found! Agent must be child of a Map.");
+        }
+        else
+        {
+            // Find or add ChaseManager on the killer
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                chaseManager = killerAgent.GetComponent<ChaseManager>();
+                if (chaseManager == null)
+                {
+                    chaseManager = killerAgent.gameObject.AddComponent<ChaseManager>();
+                }
+            }
         }
         
         // Ensure the agent requests decisions
@@ -64,6 +119,12 @@ public class SurvivorAgent : Agent
         episodeTimer = 0f;
         scratchMarkTimer = 0f;
         wasMovingLastFrame = false;
+        healthState = SurvivorHealthState.Healthy;
+        hasSpeedBoost = false;
+        speedBoostTimer = 0f;
+        downCount = 0;
+        isEliminated = false;
+        UpdateHealthColor();
     }
     
     public override void CollectObservations(VectorSensor sensor)
@@ -147,7 +208,9 @@ public class SurvivorAgent : Agent
         }
         
         // LOS checks to other survivors (up to 3 others = 12 observations)
-        SurvivorAgent[] allSurvivors = FindObjectsByType<SurvivorAgent>(FindObjectsSortMode.None);
+        SurvivorAgent[] allSurvivors = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
         int survivorsChecked = 0;
         
         foreach (SurvivorAgent otherSurvivor in allSurvivors)
@@ -207,8 +270,41 @@ public class SurvivorAgent : Agent
             sensor.AddObservation(0f); // No distance
         }
         
+        // Health state observations for all survivors (4 survivors = 4 observations)
+        // Find all survivors and observe their health states
+        SurvivorAgent[] allSurvivorsForHealth = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
+        bool[] healthStateAdded = new bool[4];
+        int healthStateIndex = 0;
+        
+        // First add this survivor's health state
+        sensor.AddObservation((float)healthState / 2f); // Normalize: 0=Healthy, 0.5=Injured, 1=Dying
+        healthStateAdded[healthStateIndex++] = true;
+        
+        // Then add other survivors' health states
+        foreach (SurvivorAgent survivor in allSurvivorsForHealth)
+        {
+            if (healthStateIndex >= 4) break;
+            
+            if (survivor != this)
+            {
+                sensor.AddObservation((float)survivor.healthState / 2f);
+                healthStateAdded[healthStateIndex++] = true;
+            }
+        }
+        
+        // Fill remaining slots if less than 4 survivors
+        for (int i = healthStateIndex; i < 4; i++)
+        {
+            sensor.AddObservation(0f); // Default to healthy
+        }
+        
         // LOS check to killer (4 observations)
-        GameObject killer = GameObject.FindGameObjectWithTag("Killer");
+        KillerAgent killerAgent = environmentRoot != null ? 
+            environmentRoot.GetComponentInChildren<KillerAgent>() : 
+            null;
+        GameObject killer = killerAgent != null ? killerAgent.gameObject : null;
         if (killer != null)
         {
             Vector2 directionToKiller = killer.transform.position - transform.position;
@@ -260,7 +356,32 @@ public class SurvivorAgent : Agent
             sensor.AddObservation(0f);
         }
         
-        // Total observations: 4 (position + velocity) + 96 (16 raycasts * 6 types) + 12 (3 survivors * 4 values) + 4 (killer) = 116 observations
+        // Current interaction progress (1 observation)
+        float interactionProgress = 0f;
+        
+        // Check if healing another survivor
+        SurvivorHealing healTarget = interactionController.GetCurrentHealTarget();
+        if (healTarget != null)
+        {
+            interactionProgress = healTarget.healingProgress / healTarget.maxHealingProgress;
+        }
+        // Check if repairing generator
+        else
+        {
+            Generator currentGenerator = interactionController.GetCurrentGenerator();
+            if (currentGenerator != null)
+            {
+                interactionProgress = currentGenerator.progress / currentGenerator.maxProgress;
+            }
+        }
+        
+        sensor.AddObservation(interactionProgress);
+        
+        // In chase observation (1 observation)
+        bool inChase = chaseManager != null && chaseManager.IsInChase(this);
+        sensor.AddObservation(inChase ? 1f : 0f);
+        
+        // Total observations: 4 (position + velocity) + 96 (16 raycasts * 6 types) + 12 (3 survivors * 4 values) + 4 (all survivor health states) + 4 (killer) + 1 (interaction progress) + 1 (in chase) = 122 observations
     }
     
     public override void OnActionReceived(ActionBuffers actions)
@@ -270,13 +391,48 @@ public class SurvivorAgent : Agent
         storedVertical = actions.ContinuousActions[1];
         storedInteractAction = actions.DiscreteActions[0];
         
-        // Generator repair
-        if (storedInteractAction == 1 && interactionController.GetCurrentGenerator() != null)
+        // Dying survivors cannot interact
+        if (healthState == SurvivorHealthState.Dying)
         {
-            interactionController.StartGeneratorRepair();
+            storedInteractAction = 0;
+        }
+        
+        // Handle continuous interactions (healing and generator repair)
+        if (storedInteractAction == 1)
+        {
+            // Check if healing another survivor (prioritize healing)
+            if (interactionController.GetCurrentHealTarget() != null)
+            {
+                SurvivorHealing healTarget = interactionController.GetCurrentHealTarget();
+                if (healTarget.CanBeHealed() && healthState != SurvivorHealthState.Dying)
+                {
+                    interactionController.StartHealing();
+                    // Don't stop generator repair here, only when actively healing
+                    if (interactionController.IsHealing())
+                    {
+                        interactionController.StopGeneratorRepair();
+                    }
+                }
+                else
+                {
+                    interactionController.StopHealing();
+                    // Try generator repair if can't heal
+                    if (interactionController.GetCurrentGenerator() != null)
+                    {
+                        interactionController.StartGeneratorRepair();
+                    }
+                }
+            }
+            // Generator repair (if not healing)
+            else if (interactionController.GetCurrentGenerator() != null)
+            {
+                interactionController.StartGeneratorRepair();
+            }
         }
         else
         {
+            // Stop both healing and repairing when not interacting
+            interactionController.StopHealing();
             interactionController.StopGeneratorRepair();
         }
         
@@ -287,23 +443,42 @@ public class SurvivorAgent : Agent
         episodeTimer += Time.deltaTime;
         if (episodeTimer >= episodeTimeLimitSeconds)
         {
-            AddReward(-0.1f);
-            EndEpisode();
+            PenalizeTimeLimit();
         }
     }
     
     void Update()
     {
-        // Handle interaction state changes
-        if (storedInteractAction == 1 && !wasInteractPressed)
+        // Handle interaction state changes (dying survivors cannot interact)
+        if (storedInteractAction == 1 && !wasInteractPressed && healthState != SurvivorHealthState.Dying)
         {
-            Debug.Log("[SurvivorAgent] Interact button pressed, calling TryInteract()");
-            interactionController.TryInteract();
+            // Only call TryInteract for one-time interactions (vaults, pallets)
+            // Don't call it if we're in range of a heal target or generator (continuous interactions)
+            bool isContinuousInteraction = interactionController.GetCurrentHealTarget() != null || 
+                                          interactionController.GetCurrentGenerator() != null;
+            
+            if (!isContinuousInteraction)
+            {
+                Debug.Log("[SurvivorAgent] Interact button pressed, calling TryInteract()");
+                interactionController.TryInteract();
+            }
+            
             wasInteractPressed = true;
         }
         else if (storedInteractAction == 0)
         {
             wasInteractPressed = false;
+        }
+        
+        // Handle speed boost timer
+        if (hasSpeedBoost)
+        {
+            speedBoostTimer -= Time.deltaTime;
+            if (speedBoostTimer <= 0f)
+            {
+                hasSpeedBoost = false;
+                speedBoostTimer = 0f;
+            }
         }
         
         // Apply movement every frame using stored actions
@@ -316,6 +491,14 @@ public class SurvivorAgent : Agent
     void HandleScratchMarks()
     {
         if (scratchMarkPrefab == null) return;
+        
+        // Dying survivors don't leave scratch marks
+        if (healthState == SurvivorHealthState.Dying)
+        {
+            scratchMarkTimer = 0f;
+            wasMovingLastFrame = false;
+            return;
+        }
         
         bool isMoving = rb.linearVelocity.magnitude > 0.1f;
         
@@ -353,6 +536,21 @@ public class SurvivorAgent : Agent
             return;
         }
         
+        // Determine current max speed based on health state
+        float currentMaxSpeed;
+        if (healthState == SurvivorHealthState.Dying)
+        {
+            currentMaxSpeed = dyingStateMaxSpeed;
+        }
+        else if (hasSpeedBoost)
+        {
+            currentMaxSpeed = speedBoostMaxSpeed;
+        }
+        else
+        {
+            currentMaxSpeed = maxSpeed;
+        }
+        
         Vector2 input = new Vector2(storedHorizontal, storedVertical);
         
         // Apply deceleration if no input
@@ -376,7 +574,7 @@ public class SurvivorAgent : Agent
         {
             // Apply acceleration towards target velocity
             Vector2 inputDirection = input.normalized;
-            Vector2 targetVelocity = inputDirection * maxSpeed;
+            Vector2 targetVelocity = inputDirection * currentMaxSpeed;
             
             Vector2 velocityChange = targetVelocity - rb.linearVelocity;
             Vector2 accelerationVector = velocityChange.normalized * acceleration * Time.deltaTime;
@@ -388,10 +586,10 @@ public class SurvivorAgent : Agent
             
             rb.linearVelocity += accelerationVector;
             
-            // Clamp velocity to max speed
-            if (rb.linearVelocity.magnitude > maxSpeed)
+            // Clamp velocity to current max speed
+            if (rb.linearVelocity.magnitude > currentMaxSpeed)
             {
-                rb.linearVelocity = rb.linearVelocity.normalized * maxSpeed;
+                rb.linearVelocity = rb.linearVelocity.normalized * currentMaxSpeed;
             }
         }
     }
@@ -411,6 +609,18 @@ public class SurvivorAgent : Agent
     {
         // Reward for making progress on a generator
         AddReward(progressAmount * 0.1f);
+    }
+    
+    public void RewardHealingProgress(float progressAmount)
+    {
+        // Reward for making progress on healing another survivor
+        AddReward(progressAmount * 0.05f);
+    }
+    
+    public void RewardCompletedHeal()
+    {
+        // Reward for successfully healing another survivor to full health
+        AddReward(0.5f);
     }
     
     public void RewardPalletStun()
@@ -439,10 +649,27 @@ public class SurvivorAgent : Agent
         EndEpisode();
     }
     
+    public void RewardGeneratorsCompleted()
+    {
+        // Reward for completing enough generators to escape
+        AddReward(3.0f);
+    }
+    
     public void PenalizeTimeLimit()
     {
-        // Large penalty for not escaping within time limit
-        AddReward(-5.0f);
+        // Large penalty for not completing objectives within time limit
+        AddReward(-20.0f);
+        
+        // Also penalize the killer
+        if (environmentRoot != null)
+        {
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                killerAgent.PenalizeTimeLimit();
+            }
+        }
+        
         EndEpisode();
     }
     
@@ -463,7 +690,9 @@ public class SurvivorAgent : Agent
         }
         
         // Draw LOS checks to other survivors
-        SurvivorAgent[] allSurvivors = FindObjectsByType<SurvivorAgent>(FindObjectsSortMode.None);
+        SurvivorAgent[] allSurvivors = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
         int survivorsChecked = 0;
         
         foreach (SurvivorAgent otherSurvivor in allSurvivors)
@@ -507,7 +736,10 @@ public class SurvivorAgent : Agent
         }
         
         // Draw LOS check to killer (yellow if visible, orange if blocked)
-        GameObject killer = GameObject.FindGameObjectWithTag("Killer");
+        KillerAgent killerAgent = environmentRoot != null ? 
+            environmentRoot.GetComponentInChildren<KillerAgent>() : 
+            null;
+        GameObject killer = killerAgent != null ? killerAgent.gameObject : null;
         if (killer != null)
         {
             Vector2 directionToKiller = killer.transform.position - transform.position;
@@ -540,6 +772,179 @@ public class SurvivorAgent : Agent
             // Draw ray - yellow if LOS, orange if blocked
             Gizmos.color = hasLOS ? Color.yellow : new Color(1f, 0.5f, 0f);
             Gizmos.DrawLine(transform.position, killer.transform.position);
+        }
+    }
+    
+    public void SetHealthState(SurvivorHealthState newState)
+    {
+        SurvivorHealthState previousState = healthState;
+        healthState = newState;
+        UpdateHealthColor();
+        
+        // Handle rewards/penalties based on health state changes
+        if (previousState != newState)
+        {
+            // Penalize losing health states
+            if (previousState == SurvivorHealthState.Healthy && newState == SurvivorHealthState.Injured)
+            {
+                AddReward(-0.5f); // Penalty for being injured
+                ApplySpeedBoost();
+            }
+            else if (previousState == SurvivorHealthState.Injured && newState == SurvivorHealthState.Dying)
+            {
+                AddReward(-1.0f); // Larger penalty for being downed
+                downCount++;
+                
+                // Check if all survivors are now dying (impossible to recover)
+                CheckAllSurvivorsDying();
+                
+                // Check if this is the third down (elimination)
+                if (downCount >= maxDownsBeforeElimination)
+                {
+                    EliminateSurvivor();
+                }
+            }
+            
+            // Reward gaining health states (being healed)
+            else if (previousState == SurvivorHealthState.Dying && newState == SurvivorHealthState.Injured)
+            {
+                AddReward(1.0f); // Reward for being picked up from dying
+            }
+            else if (previousState == SurvivorHealthState.Injured && newState == SurvivorHealthState.Healthy)
+            {
+                AddReward(0.5f); // Reward for being fully healed
+            }
+        }
+    }
+    
+    private void EliminateSurvivor()
+    {
+        // Heavy penalty for being eliminated
+        AddReward(-5.0f);
+        
+        isEliminated = true;
+        
+        // Hide the survivor (or you could destroy it, but keeping it helps with training)
+        gameObject.SetActive(false);
+        
+        // Check if all survivors are eliminated
+        CheckAllSurvivorsEliminated();
+    }
+    
+    private void CheckAllSurvivorsDying()
+    {
+        if (environmentRoot == null) return;
+        
+        SurvivorAgent[] allSurvivors = environmentRoot.GetComponentsInChildren<SurvivorAgent>(true);
+        
+        bool allDying = true;
+        int survivorCount = 0;
+        
+        foreach (SurvivorAgent survivor in allSurvivors)
+        {
+            if (!survivor.isEliminated)
+            {
+                survivorCount++;
+                if (survivor.GetHealthState() != SurvivorHealthState.Dying)
+                {
+                    allDying = false;
+                    break;
+                }
+            }
+        }
+        
+        // Only trigger if we actually have survivors and they're all dying
+        if (allDying && survivorCount > 0)
+        {
+            // All survivors are dying - impossible to recover, killer wins
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                killerAgent.RewardAllSurvivorsDown();
+            }
+            
+            // End episode for all agents
+            foreach (SurvivorAgent survivor in allSurvivors)
+            {
+                if (!survivor.isEliminated)
+                {
+                    survivor.AddReward(-3.0f); // Penalty for team wipe
+                    survivor.EndEpisode();
+                }
+            }
+            
+            if (killerAgent != null)
+            {
+                killerAgent.EndEpisode();
+            }
+        }
+    }
+    
+    private void CheckAllSurvivorsEliminated()
+    {
+        if (environmentRoot == null) return;
+        
+        SurvivorAgent[] allSurvivors = environmentRoot.GetComponentsInChildren<SurvivorAgent>(true); // Include inactive
+        
+        bool allEliminated = true;
+        foreach (SurvivorAgent survivor in allSurvivors)
+        {
+            if (!survivor.isEliminated)
+            {
+                allEliminated = false;
+                break;
+            }
+        }
+        
+        if (allEliminated)
+        {
+            // All survivors eliminated - killer wins
+            // Reward killer
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                killerAgent.RewardAllSurvivorsEliminated();
+            }
+            
+            // End episode for all agents
+            foreach (SurvivorAgent survivor in allSurvivors)
+            {
+                survivor.EndEpisode();
+            }
+            
+            if (killerAgent != null)
+            {
+                killerAgent.EndEpisode();
+            }
+        }
+    }
+    
+    private void ApplySpeedBoost()
+    {
+        hasSpeedBoost = true;
+        speedBoostTimer = speedBoostDuration;
+    }
+    
+    public SurvivorHealthState GetHealthState()
+    {
+        return healthState;
+    }
+    
+    private void UpdateHealthColor()
+    {
+        if (spriteRenderer == null) return;
+        
+        switch (healthState)
+        {
+            case SurvivorHealthState.Healthy:
+                spriteRenderer.color = new Color(0f, 0.807f, 0.819f); // #00CED1
+                break;
+            case SurvivorHealthState.Injured:
+                spriteRenderer.color = new Color(0f, 0.412f, 0.819f); // #0069D1
+                break;
+            case SurvivorHealthState.Dying:
+                spriteRenderer.color = new Color(0.161f, 0f, 0.819f); // #2900D1
+                break;
         }
     }
 }

@@ -9,6 +9,8 @@ public class InteractionController : MonoBehaviour
     private Rigidbody2D rb;
     private bool isRepairing = false;
     private Generator currentGenerator = null;
+    private bool isHealing = false;
+    private SurvivorHealing currentHealTarget = null;
     
     void Start()
     {
@@ -103,6 +105,22 @@ public class InteractionController : MonoBehaviour
             }
         }
         
+        // Try to heal another survivor (only survivors can heal)
+        if (gameObject.CompareTag("Survivor") && currentHealTarget != null)
+        {
+            // Check if this survivor can heal (not dying)
+            SurvivorAgent healerAgent = GetComponent<SurvivorAgent>();
+            if (healerAgent != null && healerAgent.GetHealthState() != SurvivorHealthState.Dying)
+            {
+                if (currentHealTarget.CanBeHealed())
+                {
+                    Debug.Log("[InteractionController] Starting to heal another survivor");
+                    StartHealing();
+                    return;
+                }
+            }
+        }
+        
         Debug.Log("[InteractionController] No valid interaction found");
     }
     
@@ -146,5 +164,47 @@ public class InteractionController : MonoBehaviour
     public Generator GetCurrentGenerator()
     {
         return currentGenerator;
+    }
+    
+    public void StartHealing()
+    {
+        if (currentHealTarget != null && !isHealing)
+        {
+            isHealing = true;
+            currentHealTarget.StartHealing(gameObject);
+        }
+    }
+    
+    public void StopHealing()
+    {
+        if (currentHealTarget != null && isHealing)
+        {
+            isHealing = false;
+            currentHealTarget.StopHealing(gameObject);
+        }
+    }
+    
+    public void OnHealTargetEnter(SurvivorHealing healTarget)
+    {
+        currentHealTarget = healTarget;
+    }
+    
+    public void OnHealTargetExit(SurvivorHealing healTarget)
+    {
+        if (currentHealTarget == healTarget)
+        {
+            StopHealing();
+            currentHealTarget = null;
+        }
+    }
+    
+    public bool IsHealing()
+    {
+        return isHealing;
+    }
+    
+    public SurvivorHealing GetCurrentHealTarget()
+    {
+        return currentHealTarget;
     }
 }

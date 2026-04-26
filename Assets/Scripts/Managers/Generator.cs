@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,6 +30,8 @@ public class Generator : MonoBehaviour
     private Color baseColor = new Color(0x52 / 255f, 0x52 / 255f, 0x52 / 255f); // #525252
     private Color normalProgressColor = new Color(0xFF / 255f, 0xF3 / 255f, 0x00 / 255f); // #FFF300
     private Color regressionProgressColor = new Color(0xFF / 255f, 0x85 / 255f, 0x00 / 255f); // #FF8500
+    
+    private Transform environmentRoot;
 
     void Start()
     {
@@ -45,6 +48,13 @@ public class Generator : MonoBehaviour
         if (spriteRenderer != null)
         {
             spriteRenderer.color = baseColor;
+        }
+        
+        // Find the environment root (Map_X parent)
+        environmentRoot = transform.parent;
+        if (environmentRoot == null)
+        {
+            Debug.LogWarning("[Generator] No parent found! Generator should be child of a Map.");
         }
     }
 
@@ -81,14 +91,12 @@ public class Generator : MonoBehaviour
             progress += progressThisFrame;
             
             // Penalize killer for generator progress
-            GameObject killer = GameObject.FindGameObjectWithTag("Killer");
-            if (killer != null)
+            KillerAgent killerAgent = environmentRoot != null ? 
+                environmentRoot.GetComponentInChildren<KillerAgent>() : 
+                null;
+            if (killerAgent != null)
             {
-                KillerAgent killerAgent = killer.GetComponent<KillerAgent>();
-                if (killerAgent != null)
-                {
-                    killerAgent.PenalizeGeneratorProgress(progressThisFrame);
-                }
+                killerAgent.PenalizeGeneratorProgress(progressThisFrame);
             }
            
             if (isRegressing)
@@ -221,15 +229,65 @@ public class Generator : MonoBehaviour
         isComplete = true;
         isRegressing = false;
         progress = maxProgress;
-        //Debug.Log("Generator complete!");
         repairingPlayers.Clear();
 
         if (progressCanvas != null)
         {
             progressCanvas.SetActive(true);
         }
-        // Implement generator completion logic here (e.g., open exit, trigger events)
-
+        
+        // Check if enough generators are completed for survivors to win
+        CheckGeneratorCompletionWinCondition();
+    }
+    
+    private void CheckGeneratorCompletionWinCondition()
+    {
+        if (environmentRoot == null) return;
+        
+        // Count completed generators
+        Generator[] allGenerators = environmentRoot.GetComponentsInChildren<Generator>();
+        int completedCount = 0;
+        
+        foreach (Generator gen in allGenerators)
+        {
+            if (gen.isComplete)
+            {
+                completedCount++;
+            }
+        }
+        
+        // Win condition: 5 generators OR all available generators (whichever comes first)
+        int requiredGenerators = Mathf.Min(5, allGenerators.Length);
+        
+        if (completedCount >= requiredGenerators)
+        {
+            // Survivors win! Reward all survivors and penalize killer
+            SurvivorAgent[] allSurvivors = environmentRoot.GetComponentsInChildren<SurvivorAgent>(true);
+            foreach (SurvivorAgent survivor in allSurvivors)
+            {
+                if (!survivor.isEliminated)
+                {
+                    survivor.RewardGeneratorsCompleted();
+                }
+            }
+            
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                killerAgent.PenalizeGeneratorsCompleted();
+            }
+            
+            // End episode for all agents
+            foreach (SurvivorAgent survivor in allSurvivors)
+            {
+                survivor.EndEpisode();
+            }
+            
+            if (killerAgent != null)
+            {
+                killerAgent.EndEpisode();
+            }
+        }
     }
 
     public void StartRegression()

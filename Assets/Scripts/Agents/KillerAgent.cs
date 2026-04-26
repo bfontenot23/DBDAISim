@@ -33,6 +33,7 @@ public class KillerAgent : Agent
     
     private Rigidbody2D rb;
     private InteractionController interactionController;
+    private Transform environmentRoot;
     private bool wasInteractPressed = false;
     private float episodeTimer = 0f;
     
@@ -49,6 +50,8 @@ public class KillerAgent : Agent
     private float attackHoldTime = 0f;
     private Vector2 attackDirection = Vector2.zero;
     
+    private ChaseManager chaseManager;
+    
     public override void Initialize()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -61,6 +64,22 @@ public class KillerAgent : Agent
         if (interactionController == null)
         {
             interactionController = gameObject.AddComponent<InteractionController>();
+        }
+        
+        // Find the environment root (Map_X parent)
+        environmentRoot = transform.parent;
+        if (environmentRoot == null)
+        {
+            Debug.LogError("[KillerAgent] No parent found! Agent must be child of a Map.");
+        }
+        else
+        {
+            // Find or add ChaseManager
+            chaseManager = GetComponent<ChaseManager>();
+            if (chaseManager == null)
+            {
+                chaseManager = gameObject.AddComponent<ChaseManager>();
+            }
         }
         
         // Find attack hitbox if not assigned
@@ -186,7 +205,9 @@ public class KillerAgent : Agent
         }
         
         // LOS checks to all survivors (up to 4 survivors = 16 observations)
-        SurvivorAgent[] allSurvivors = FindObjectsByType<SurvivorAgent>(FindObjectsSortMode.None);
+        SurvivorAgent[] allSurvivors = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
         int survivorsChecked = 0;
         
         foreach (SurvivorAgent survivor in allSurvivors)
@@ -246,7 +267,31 @@ public class KillerAgent : Agent
             sensor.AddObservation(0f); // No distance
         }
         
-        // Total observations: 4 (position + velocity) + 112 (16 raycasts * 7 types) + 16 (4 survivors * 4 values) = 132 observations
+        // Health state observations for all survivors (4 survivors = 4 observations)
+        SurvivorAgent[] allSurvivorsForHealth = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
+        int healthStateIndex = 0;
+        
+        foreach (SurvivorAgent survivor in allSurvivorsForHealth)
+        {
+            if (healthStateIndex >= 4) break;
+            
+            sensor.AddObservation((float)survivor.GetHealthState() / 2f); // Normalize: 0=Healthy, 0.5=Injured, 1=Dying
+            healthStateIndex++;
+        }
+        
+        // Fill remaining slots if less than 4 survivors
+        for (int i = healthStateIndex; i < 4; i++)
+        {
+            sensor.AddObservation(0f); // Default to healthy
+        }
+        
+        // In chase observation (1 observation)
+        bool inChase = chaseManager != null && chaseManager.IsKillerInAnyChase();
+        sensor.AddObservation(inChase ? 1f : 0f);
+        
+        // Total observations: 4 (position + velocity) + 112 (16 raycasts * 7 types) + 16 (4 survivors * 4 values) + 4 (survivor health states) + 1 (in chase) = 137 observations
     }
     
     public override void OnActionReceived(ActionBuffers actions)
@@ -268,7 +313,9 @@ public class KillerAgent : Agent
             AddReward(-5.0f);
             
             // Penalize all survivors too
-            SurvivorAgent[] allSurvivors = FindObjectsByType<SurvivorAgent>(FindObjectsSortMode.None);
+            SurvivorAgent[] allSurvivors = environmentRoot != null ? 
+                environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+                new SurvivorAgent[0];
             foreach (SurvivorAgent survivor in allSurvivors)
             {
                 survivor.PenalizeTimeLimit();
@@ -515,9 +562,28 @@ public class KillerAgent : Agent
                 SurvivorAgent survivorAgent = hit.GetComponent<SurvivorAgent>();
                 if (survivorAgent != null)
                 {
-                    survivorAgent.PenalizeCaught(); // This will give penalty and end episode
-                    RewardHitSurvivor();
-                    return true; // Only hit one survivor
+                    SurvivorHealthState currentState = survivorAgent.GetHealthState();
+                    
+                    // Ignore dying survivors
+                    if (currentState == SurvivorHealthState.Dying)
+                    {
+                        continue;
+                    }
+                    
+                    if (currentState == SurvivorHealthState.Healthy)
+                    {
+                        // Healthy -> Injured
+                        survivorAgent.SetHealthState(SurvivorHealthState.Injured);
+                        RewardHitSurvivor();
+                        return true; // Successfully hit one survivor
+                    }
+                    else if (currentState == SurvivorHealthState.Injured)
+                    {
+                        // Injured -> Dying (downed)
+                        survivorAgent.SetHealthState(SurvivorHealthState.Dying);
+                        RewardCatchSurvivor();
+                        return true; // Successfully hit one survivor
+                    }
                 }
             }
         }
@@ -686,6 +752,30 @@ public class KillerAgent : Agent
         EndEpisode();
     }
     
+    public void RewardAllSurvivorsEliminated()
+    {
+        // Large reward for eliminating all survivors (third down)
+        AddReward(10.0f);
+    }
+    
+    public void RewardAllSurvivorsDown()
+    {
+        // Large reward for getting all survivors into dying state simultaneously
+        AddReward(10.0f);
+    }
+    
+    public void PenalizeGeneratorsCompleted()
+    {
+        // Penalty for survivors completing enough generators
+        AddReward(-10.0f);
+    }
+    
+    public void PenalizeTimeLimit()
+    {
+        // Large penalty for not completing objectives within time limit
+        AddReward(-20.0f);
+    }
+    
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;
@@ -703,7 +793,9 @@ public class KillerAgent : Agent
         }
         
         // Draw LOS checks to all survivors
-        SurvivorAgent[] allSurvivors = FindObjectsByType<SurvivorAgent>(FindObjectsSortMode.None);
+        SurvivorAgent[] allSurvivors = environmentRoot != null ? 
+            environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
+            new SurvivorAgent[0];
         int survivorsChecked = 0;
         
         foreach (SurvivorAgent survivor in allSurvivors)
