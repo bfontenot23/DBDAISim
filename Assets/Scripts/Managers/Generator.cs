@@ -23,6 +23,12 @@ public class Generator : MonoBehaviour
     private Slider progressBar; 
     private GameObject progressCanvas; 
     private Transform uiTransform;
+    
+    [Header("Visual Feedback")]
+    private SpriteRenderer spriteRenderer;
+    private Color baseColor = new Color(0x52 / 255f, 0x52 / 255f, 0x52 / 255f); // #525252
+    private Color normalProgressColor = new Color(0xFF / 255f, 0xF3 / 255f, 0x00 / 255f); // #FFF300
+    private Color regressionProgressColor = new Color(0xFF / 255f, 0x85 / 255f, 0x00 / 255f); // #FF8500
 
     void Start()
     {
@@ -33,6 +39,12 @@ public class Generator : MonoBehaviour
             progressCanvas.SetActive(false);
 
             uiTransform = progressCanvas.transform; 
+        }
+        
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = baseColor;
         }
     }
 
@@ -120,6 +132,9 @@ public class Generator : MonoBehaviour
         {
             uiTransform.rotation = Quaternion.identity; 
         }
+        
+        // Update generator color based on progress
+        UpdateGeneratorColor();
     }
 
     float GetEfficiency(int survivors)
@@ -226,7 +241,11 @@ public class Generator : MonoBehaviour
     
     public void KickGenerator(GameObject kicker)
     {
-        if (isComplete) return;
+        if (isComplete)
+        {
+            Debug.Log("[Generator] Cannot kick a completed generator");
+            return;
+        }
         
         // Can't kick a generator with no progress
         if (progress <= 0f)
@@ -248,6 +267,17 @@ public class Generator : MonoBehaviour
         {
             killerAgent.StartCoroutine(killerAgent.PerformGeneratorKick(this));
         }
+    }
+    
+    void UpdateGeneratorColor()
+    {
+        if (spriteRenderer == null) return;
+        
+        float progressRatio = Mathf.Clamp01(progress / maxProgress);
+        Color targetColor = isRegressing ? regressionProgressColor : normalProgressColor;
+        Color currentColor = Color.Lerp(baseColor, targetColor, progressRatio);
+        
+        spriteRenderer.color = currentColor;
     }
 
 }
