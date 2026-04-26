@@ -18,10 +18,16 @@ public class SurvivorAgent : Agent
     [Header("Episode Settings")]
     public float episodeTimeLimitSeconds = 600f; // 10 minutes
     
+    [Header("Scratch Marks")]
+    public GameObject scratchMarkPrefab;
+    public float scratchMarkSpawnInterval = 1f;
+    
     private Rigidbody2D rb;
     private InteractionController interactionController;
     private bool wasInteractPressed = false;
     private float episodeTimer = 0f;
+    private float scratchMarkTimer = 0f;
+    private bool wasMovingLastFrame = false;
     
     private float storedHorizontal = 0f;
     private float storedVertical = 0f;
@@ -56,6 +62,8 @@ public class SurvivorAgent : Agent
         // Reset survivor state at the start of each episode
         rb.linearVelocity = Vector2.zero;
         episodeTimer = 0f;
+        scratchMarkTimer = 0f;
+        wasMovingLastFrame = false;
     }
     
     public override void CollectObservations(VectorSensor sensor)
@@ -300,6 +308,41 @@ public class SurvivorAgent : Agent
         
         // Apply movement every frame using stored actions
         ApplyMovement();
+        
+        // Handle scratch mark spawning
+        HandleScratchMarks();
+    }
+    
+    void HandleScratchMarks()
+    {
+        if (scratchMarkPrefab == null) return;
+        
+        bool isMoving = rb.linearVelocity.magnitude > 0.1f;
+        
+        if (isMoving)
+        {
+            // Reset timer when starting to move
+            if (!wasMovingLastFrame)
+            {
+                scratchMarkTimer = 0f;
+            }
+            
+            scratchMarkTimer += Time.deltaTime;
+            
+            // Spawn scratch mark every interval
+            if (scratchMarkTimer >= scratchMarkSpawnInterval)
+            {
+                Instantiate(scratchMarkPrefab, transform.position, Quaternion.identity);
+                scratchMarkTimer = 0f;
+            }
+        }
+        else
+        {
+            // Reset timer when stopped
+            scratchMarkTimer = 0f;
+        }
+        
+        wasMovingLastFrame = isMoving;
     }
     
     void ApplyMovement()

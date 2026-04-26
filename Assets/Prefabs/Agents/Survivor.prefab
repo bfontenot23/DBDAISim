@@ -133,6 +133,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   episodeTimeLimitSeconds: 600
+  scratchMarkPrefab: {fileID: 4996178904959732940, guid: 0a4f4fe98ead25d4f8939bcda457f3d9, type: 3}
+  scratchMarkSpawnInterval: 1
 --- !u!114 &5987498678728631962
 MonoBehaviour:
   m_ObjectHideFlags: 0

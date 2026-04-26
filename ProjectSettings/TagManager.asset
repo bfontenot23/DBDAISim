@@ -12,6 +12,7 @@ TagManager:
   - Killer
   - UndroppedPallet
   - DroppedPallet
+  - ScratchMarks
   layers:
   - Default
   - TransparentFX

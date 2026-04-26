@@ -128,6 +128,7 @@ public class KillerAgent : Agent
             float undroppedPalletDistance = raycastDistance;
             float droppedPalletDistance = raycastDistance;
             float shortWallDistance = raycastDistance;
+            float scratchMarksDistance = raycastDistance;
             
             bool blockedByWall = false;
             
@@ -150,6 +151,11 @@ public class KillerAgent : Agent
                         // ShortWall can be seen but doesn't block vision
                         shortWallDistance = Mathf.Min(shortWallDistance, distance);
                     }
+                    else if (hit.collider.CompareTag("ScratchMarks"))
+                    {
+                        // ScratchMarks can be seen but don't block vision
+                        scratchMarksDistance = Mathf.Min(scratchMarksDistance, distance);
+                    }
                     else if (hit.collider.CompareTag("Generator"))
                     {
                         generatorDistance = Mathf.Min(generatorDistance, distance);
@@ -169,13 +175,14 @@ public class KillerAgent : Agent
                 }
             }
             
-            // Add normalized observations (6 per raycast = 96 observations total)
+            // Add normalized observations (7 per raycast = 112 observations total)
             sensor.AddObservation(wallDistance / raycastDistance);
             sensor.AddObservation(generatorDistance / raycastDistance);
             sensor.AddObservation(windowDistance / raycastDistance);
             sensor.AddObservation(undroppedPalletDistance / raycastDistance);
             sensor.AddObservation(droppedPalletDistance / raycastDistance);
             sensor.AddObservation(shortWallDistance / raycastDistance);
+            sensor.AddObservation(scratchMarksDistance / raycastDistance);
         }
         
         // LOS checks to all survivors (up to 4 survivors = 16 observations)
@@ -239,7 +246,7 @@ public class KillerAgent : Agent
             sensor.AddObservation(0f); // No distance
         }
         
-        // Total observations: 4 (position + velocity) + 96 (16 raycasts * 6 types) + 16 (4 survivors * 4 values) = 116 observations
+        // Total observations: 4 (position + velocity) + 112 (16 raycasts * 7 types) + 16 (4 survivors * 4 values) = 132 observations
     }
     
     public override void OnActionReceived(ActionBuffers actions)
