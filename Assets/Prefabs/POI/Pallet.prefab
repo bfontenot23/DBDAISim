@@ -184,7 +184,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7189810569099946082
 Transform:
   m_ObjectHideFlags: 0
@@ -218,7 +218,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7892154369841503685
 Transform:
   m_ObjectHideFlags: 0
@@ -342,7 +342,7 @@ GameObject:
   - component: {fileID: 5207587946931864305}
   m_Layer: 0
   m_Name: Pallet
-  m_TagString: Untagged
+  m_TagString: UndroppedPallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -572,7 +572,7 @@ GameObject:
   - component: {fileID: 8282229708768906590}
   m_Layer: 0
   m_Name: Pallet
-  m_TagString: Untagged
+  m_TagString: DroppedPallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

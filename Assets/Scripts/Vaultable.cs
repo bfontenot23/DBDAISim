@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class Vaultable : MonoBehaviour
 {
-    private static HashSet<PlayerController> globalVaultingPlayers = new HashSet<PlayerController>();
+    private static HashSet<MonoBehaviour> globalVaultingPlayers = new HashSet<MonoBehaviour>();
     
     [Header("Vault Zones")]
     public GameObject leftVaultZone;
@@ -22,24 +22,21 @@ public class Vaultable : MonoBehaviour
     [Header("Vault Type")]
     public bool allowKillerVault = true;
     
-    private PlayerController playerInLeftVaultZone;
-    private PlayerController playerInRightVaultZone;
-    private PlayerController vaultingPlayer = null;
+    private MonoBehaviour playerInLeftVaultZone;
+    private MonoBehaviour playerInRightVaultZone;
+    private MonoBehaviour vaultingPlayer = null;
     
-    public static bool IsPlayerVaulting(PlayerController player)
+    public static bool IsPlayerVaulting(MonoBehaviour player)
     {
         return globalVaultingPlayers.Contains(player);
     }
     
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            TryVault();
-        }
+        // Input handling moved to InteractionController
     }
     
-    public void OnPlayerEnterVaultZone(PlayerController player, VaultZone.VaultSide side)
+    public void OnPlayerEnterVaultZone(MonoBehaviour player, VaultZone.VaultSide side)
     {
         if (!allowKillerVault && player.CompareTag("Killer"))
             return;
@@ -54,7 +51,7 @@ public class Vaultable : MonoBehaviour
         }
     }
     
-    public void OnPlayerExitVaultZone(PlayerController player, VaultZone.VaultSide side)
+    public void OnPlayerExitVaultZone(MonoBehaviour player, VaultZone.VaultSide side)
     {
         if (side == VaultZone.VaultSide.Left && playerInLeftVaultZone == player)
         {
@@ -66,37 +63,79 @@ public class Vaultable : MonoBehaviour
         }
     }
     
-    private void TryVault()
+    public bool TryVaultFromInteraction(GameObject interactingObject)
+    {
+        MonoBehaviour player = interactingObject.GetComponent<SurvivorAgent>();
+        if (player == null)
+        {
+            player = interactingObject.GetComponent<PlayerController>();
+        }
+        if (player == null)
+        {
+            player = interactingObject.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
+        {
+            return TryVault(player);
+        }
+        return false;
+    }
+    
+    private bool TryVault(MonoBehaviour player = null)
     {
         if (vaultingPlayer != null)
-            return;
+            return false;
         
         Transform startZone = null;
         Transform endZone = null;
-        PlayerController playerToVault = null;
+        MonoBehaviour playerToVault = null;
         
-        if (playerInLeftVaultZone != null && leftVaultZone != null && rightVaultZone != null)
+        // If player is specified, only vault that specific player
+        if (player != null)
         {
-            startZone = leftVaultZone.transform;
-            endZone = rightVaultZone.transform;
-            playerToVault = playerInLeftVaultZone;
+            if (player == playerInLeftVaultZone && leftVaultZone != null && rightVaultZone != null)
+            {
+                startZone = leftVaultZone.transform;
+                endZone = rightVaultZone.transform;
+                playerToVault = playerInLeftVaultZone;
+            }
+            else if (player == playerInRightVaultZone && rightVaultZone != null && leftVaultZone != null)
+            {
+                startZone = rightVaultZone.transform;
+                endZone = leftVaultZone.transform;
+                playerToVault = playerInRightVaultZone;
+            }
         }
-        else if (playerInRightVaultZone != null && rightVaultZone != null && leftVaultZone != null)
+        else
         {
-            startZone = rightVaultZone.transform;
-            endZone = leftVaultZone.transform;
-            playerToVault = playerInRightVaultZone;
+            // Try left zone first, then right
+            if (playerInLeftVaultZone != null && leftVaultZone != null && rightVaultZone != null)
+            {
+                startZone = leftVaultZone.transform;
+                endZone = rightVaultZone.transform;
+                playerToVault = playerInLeftVaultZone;
+            }
+            else if (playerInRightVaultZone != null && rightVaultZone != null && leftVaultZone != null)
+            {
+                startZone = rightVaultZone.transform;
+                endZone = leftVaultZone.transform;
+                playerToVault = playerInRightVaultZone;
+            }
         }
+        
         
         if (startZone != null && endZone != null && playerToVault != null)
         {
             vaultingPlayer = playerToVault;
-            globalVaultingPlayers.Add(playerToVault);
+            InteractionController.StartVaulting(playerToVault);
             StartCoroutine(PerformVault(playerToVault, startZone.position, endZone.position));
+            return true;
         }
+        return false;
     }
     
-    private IEnumerator PerformVault(PlayerController player, Vector3 startPosition, Vector3 endPosition)
+    private IEnumerator PerformVault(MonoBehaviour player, Vector3 startPosition, Vector3 endPosition)
     {
         Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
         float velocityBeforeVault = 0f;
@@ -152,15 +191,15 @@ public class Vaultable : MonoBehaviour
         if (playerRb != null)
         {
             Vector3 vaultDirection = (endPosition - startPosition).normalized;
-            float exitVelocity = Mathf.Min(velocityBeforeVault, player.maxSpeed);
+            float exitVelocity = Mathf.Min(velocityBeforeVault, GetMaxSpeed(player));
             playerRb.linearVelocity = new Vector2(vaultDirection.x, vaultDirection.y) * exitVelocity;
         }
         
         vaultingPlayer = null;
-        globalVaultingPlayers.Remove(player);
+        InteractionController.StopVaulting(player);
     }
     
-    private float GetVaultDuration(PlayerController player, float velocity)
+    private float GetVaultDuration(MonoBehaviour player, float velocity)
     {
         if (player.CompareTag("Killer"))
         {
@@ -179,5 +218,25 @@ public class Vaultable : MonoBehaviour
         {
             return fastVaultDuration;
         }
+    }
+    
+    private float GetMaxSpeed(MonoBehaviour player)
+    {
+        // Try to get maxSpeed from PlayerController
+        PlayerController pc = player as PlayerController;
+        if (pc != null)
+        {
+            return pc.maxSpeed;
+        }
+        
+        // Try to get maxSpeed from SurvivorAgent
+        SurvivorAgent sa = player as SurvivorAgent;
+        if (sa != null)
+        {
+            return sa.maxSpeed;
+        }
+        
+        // Default fallback
+        return 4f;
     }
 }

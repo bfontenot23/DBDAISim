@@ -6,11 +6,12 @@ TagManager:
   tags:
   - Wall
   - ShortWall
-  - Pallet
   - Generator
   - Window
   - Survivor
   - Killer
+  - UndroppedPallet
+  - DroppedPallet
   layers:
   - Default
   - TransparentFX

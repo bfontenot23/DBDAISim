@@ -10,7 +10,7 @@ public class Generator : MonoBehaviour
     public float maxProgress = 100f;
     public float baseRepairSpeed = 1f;
     private List<GameObject> repairingPlayers = new List<GameObject>();
-    private HashSet<PlayerController> playersInRange = new HashSet<PlayerController>();
+    private HashSet<MonoBehaviour> playersInRange = new HashSet<MonoBehaviour>();
     private bool isComplete = false;
 
     [Header("Regression")]
@@ -55,20 +55,10 @@ public class Generator : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
+        //Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
         
-        foreach (var player in playersInRange)
-        {
-            if (Input.GetMouseButton(0))
-            {
-                StartRepair(player.gameObject);
-            }
-            else
-            {
-                StopRepair(player.gameObject);
-            }
-        }
 
+        
         int n = repairingPlayers.Count;
         //repairing
         if (n > 0)
@@ -129,20 +119,54 @@ public class Generator : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.TryGetComponent(out PlayerController player))
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
         {
             playersInRange.Add(player);
-        
+            
+            // Notify InteractionController
+            InteractionController interactionController = player.GetComponent<InteractionController>();
+            if (interactionController != null)
+            {
+                interactionController.OnGeneratorEnter(this);
+            }
         }
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.TryGetComponent(out PlayerController player))
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
         {
             playersInRange.Remove(player);
             StopRepair(player.gameObject);
+            
+            // Notify InteractionController
+            InteractionController interactionController = player.GetComponent<InteractionController>();
+            if (interactionController != null)
+            {
+                interactionController.OnGeneratorExit(this);
+            }
         }
+        
         if (playersInRange.Count == 0 && progressCanvas != null)
         {
             progressCanvas.SetActive(false);
@@ -170,7 +194,7 @@ public class Generator : MonoBehaviour
         isComplete = true;
         isRegressing = false;
         progress = maxProgress;
-        Debug.Log("Generator complete!");
+        //Debug.Log("Generator complete!");
         repairingPlayers.Clear();
 
         if (progressCanvas != null)

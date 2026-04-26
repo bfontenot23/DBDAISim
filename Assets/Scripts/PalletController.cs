@@ -1,10 +1,11 @@
 using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 public class PalletController : MonoBehaviour
 {
-    private static HashSet<PlayerController> globalLockedPlayers = new HashSet<PlayerController>();
+    private static HashSet<MonoBehaviour> globalLockedPlayers = new HashSet<MonoBehaviour>();
     
     [Header("Pallet States")]
     public GameObject standingObject;
@@ -21,11 +22,11 @@ public class PalletController : MonoBehaviour
     public float dropZoneCheckRadius = 0.5f;
     
     private bool isDropped = false;
-    private PlayerController playerInLeftZone;
-    private PlayerController playerInRightZone;
+    private MonoBehaviour playerInLeftZone;
+    private MonoBehaviour playerInRightZone;
     private bool leftZoneActive = true;
     private bool rightZoneActive = true;
-    private PlayerController lockedPlayer = null;
+    private MonoBehaviour lockedPlayer = null;
     private PalletThrowZone.ThrowSide? firstZoneEntered = null;
     private float zoneResetTimer = 0f;
     private const float zoneResetDelay = 1f;
@@ -44,10 +45,7 @@ public class PalletController : MonoBehaviour
         if (isDropped)
             return;
         
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            TryDropPallet();
-        }
+        // Input handling moved to InteractionController
         
         CheckPlayerVelocity(playerInLeftZone, ref leftZoneActive);
         CheckPlayerVelocity(playerInRightZone, ref rightZoneActive);
@@ -67,12 +65,12 @@ public class PalletController : MonoBehaviour
         }
     }
     
-    public static bool IsPlayerLocked(PlayerController player)
+    public static bool IsPlayerLocked(MonoBehaviour player)
     {
         return globalLockedPlayers.Contains(player);
     }
     
-    public void OnPlayerEnterZone(PlayerController player, PalletThrowZone.ThrowSide side)
+    public void OnPlayerEnterZone(MonoBehaviour player, PalletThrowZone.ThrowSide side)
     {
         if (isDropped)
             return;
@@ -111,7 +109,7 @@ public class PalletController : MonoBehaviour
         }
     }
     
-    public void OnPlayerExitZone(PlayerController player, PalletThrowZone.ThrowSide side)
+    public void OnPlayerExitZone(MonoBehaviour player, PalletThrowZone.ThrowSide side)
     {
         if (side == PalletThrowZone.ThrowSide.Left && playerInLeftZone == player)
         {
@@ -125,7 +123,7 @@ public class PalletController : MonoBehaviour
         }
     }
     
-    private void CheckPlayerVelocity(PlayerController player, ref bool zoneActive)
+    private void CheckPlayerVelocity(MonoBehaviour player, ref bool zoneActive)
     {
         if (player == null)
         {
@@ -165,34 +163,88 @@ public class PalletController : MonoBehaviour
         return false;
     }
     
-    private void TryDropPallet()
+    public bool TryDropPalletFromInteraction(GameObject interactingObject)
     {
+        MonoBehaviour player = interactingObject.GetComponent<SurvivorAgent>();
+        if (player == null)
+        {
+            player = interactingObject.GetComponent<PlayerController>();
+        }
+        if (player == null)
+        {
+            player = interactingObject.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
+        {
+            return TryDropPallet(player);
+        }
+        return false;
+    }
+    
+    private bool TryDropPallet(MonoBehaviour player = null)
+    {
+        Debug.Log($"[PalletController] TryDropPallet called for {player?.GetType().Name}");
+        
         if (lockedPlayer != null)
-            return;
+        {
+            Debug.Log("[PalletController] Locked player exists, cannot drop");
+            return false;
+        }
         
         Transform targetPosition = null;
-        PlayerController playerToMove = null;
+        MonoBehaviour playerToMove = null;
         
-        if (playerInLeftZone != null && leftZoneActive && !IsKillerAtPosition(leftDropPosition.position))
+        Debug.Log($"[PalletController] playerInLeftZone: {playerInLeftZone?.GetType().Name}, leftZoneActive: {leftZoneActive}");
+        Debug.Log($"[PalletController] playerInRightZone: {playerInRightZone?.GetType().Name}, rightZoneActive: {rightZoneActive}");
+        
+        // If player is specified, only drop pallet for that specific player
+        if (player != null)
         {
-            targetPosition = leftDropPosition;
-            playerToMove = playerInLeftZone;
+            Debug.Log($"[PalletController] Checking if player {player.GetType().Name} is in zones");
+            Debug.Log($"[PalletController] player == playerInLeftZone: {player == playerInLeftZone}");
+            Debug.Log($"[PalletController] player == playerInRightZone: {player == playerInRightZone}");
+            
+            if (player == playerInLeftZone && leftZoneActive && !IsKillerAtPosition(leftDropPosition.position))
+            {
+                targetPosition = leftDropPosition;
+                playerToMove = playerInLeftZone;
+                Debug.Log("[PalletController] Left zone conditions met");
+            }
+            else if (player == playerInRightZone && rightZoneActive && !IsKillerAtPosition(rightDropPosition.position))
+            {
+                targetPosition = rightDropPosition;
+                playerToMove = playerInRightZone;
+                Debug.Log("[PalletController] Right zone conditions met");
+            }
         }
-        else if (playerInRightZone != null && rightZoneActive && !IsKillerAtPosition(rightDropPosition.position))
+        else
         {
-            targetPosition = rightDropPosition;
-            playerToMove = playerInRightZone;
+            // Try left zone first, then right
+            if (playerInLeftZone != null && leftZoneActive && !IsKillerAtPosition(leftDropPosition.position))
+            {
+                targetPosition = leftDropPosition;
+                playerToMove = playerInLeftZone;
+            }
+            else if (playerInRightZone != null && rightZoneActive && !IsKillerAtPosition(rightDropPosition.position))
+            {
+                targetPosition = rightDropPosition;
+                playerToMove = playerInRightZone;
+            }
         }
+        
         
         if (targetPosition != null && playerToMove != null)
         {
             lockedPlayer = playerToMove;
-            globalLockedPlayers.Add(playerToMove);
+            InteractionController.LockCharacter(playerToMove);
             StartCoroutine(MovePlayerAndDropPallet(playerToMove, targetPosition));
+            return true;
         }
+        return false;
     }
     
-    private IEnumerator MovePlayerAndDropPallet(PlayerController player, Transform targetPosition)
+    private IEnumerator MovePlayerAndDropPallet(MonoBehaviour player, Transform targetPosition)
     {
         Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
         if (playerRb != null)
@@ -247,6 +299,6 @@ public class PalletController : MonoBehaviour
         
         isDropped = true;
         lockedPlayer = null;
-        globalLockedPlayers.Remove(player);
+        InteractionController.UnlockCharacter(player);
     }
 }
