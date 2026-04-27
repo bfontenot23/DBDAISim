@@ -34,8 +34,8 @@ public class KillerAgent : Agent
     private Rigidbody2D rb;
     private InteractionController interactionController;
     private Transform environmentRoot;
+    private MapEnvironmentController environmentController;
     private bool wasInteractPressed = false;
-    private float episodeTimer = 0f;
     
     private float storedHorizontal = 0f;
     private float storedVertical = 0f;
@@ -74,6 +74,14 @@ public class KillerAgent : Agent
         }
         else
         {
+            // Get the MapEnvironmentController
+            environmentController = environmentRoot.GetComponent<MapEnvironmentController>();
+            if (environmentController == null)
+            {
+                Debug.LogWarning("[KillerAgent] MapEnvironmentController not found on parent. Adding one.");
+                environmentController = environmentRoot.gameObject.AddComponent<MapEnvironmentController>();
+            }
+            
             // Find or add ChaseManager
             chaseManager = GetComponent<ChaseManager>();
             if (chaseManager == null)
@@ -114,7 +122,6 @@ public class KillerAgent : Agent
     {
         // Reset killer state at the start of each episode
         rb.linearVelocity = Vector2.zero;
-        episodeTimer = 0f;
     }
     
     public override void CollectObservations(VectorSensor sensor)
@@ -305,24 +312,8 @@ public class KillerAgent : Agent
         // Small negative reward per step to encourage efficiency
         AddReward(-0.0001f);
         
-        // Track episode time and end if time limit reached
-        episodeTimer += Time.deltaTime;
-        if (episodeTimer >= episodeTimeLimitSeconds)
-        {
-            // Large penalty for not winning within time limit
-            AddReward(-5.0f);
-            
-            // Penalize all survivors too
-            SurvivorAgent[] allSurvivors = environmentRoot != null ? 
-                environmentRoot.GetComponentsInChildren<SurvivorAgent>() : 
-                new SurvivorAgent[0];
-            foreach (SurvivorAgent survivor in allSurvivors)
-            {
-                survivor.PenalizeTimeLimit();
-            }
-            
-            EndEpisode();
-        }
+        // Episode time is now tracked by MapEnvironmentController
+        // No need to track it here
     }
     
     void Update()
@@ -749,19 +740,21 @@ public class KillerAgent : Agent
     {
         // Large reward for catching all survivors
         AddReward(10.0f);
-        EndEpisode();
+        // Don't end episode here - environment controller handles it
     }
     
     public void RewardAllSurvivorsEliminated()
     {
         // Large reward for eliminating all survivors (third down)
         AddReward(10.0f);
+        // Don't end episode here - environment controller handles it
     }
     
     public void RewardAllSurvivorsDown()
     {
         // Large reward for getting all survivors into dying state simultaneously
         AddReward(10.0f);
+        // Don't end episode here - environment controller handles it
     }
     
     public void PenalizeGeneratorsCompleted()
@@ -772,7 +765,8 @@ public class KillerAgent : Agent
     
     public void PenalizeTimeLimit()
     {
-        // Large penalty for not completing objectives within time limit
+        // This is now handled by MapEnvironmentController
+        // Keep the method for backward compatibility but don't call EndEpisode
         AddReward(-20.0f);
     }
     

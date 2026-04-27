@@ -48,8 +48,8 @@ public class SurvivorAgent : Agent
     private SpriteRenderer spriteRenderer;
     private InteractionController interactionController;
     private Transform environmentRoot;
+    private MapEnvironmentController environmentController;
     private bool wasInteractPressed = false;
-    private float episodeTimer = 0f;
     private float scratchMarkTimer = 0f;
     private bool wasMovingLastFrame = false;
     
@@ -90,6 +90,14 @@ public class SurvivorAgent : Agent
         }
         else
         {
+            // Get the MapEnvironmentController
+            environmentController = environmentRoot.GetComponent<MapEnvironmentController>();
+            if (environmentController == null)
+            {
+                Debug.LogWarning("[SurvivorAgent] MapEnvironmentController not found on parent. Adding one.");
+                environmentController = environmentRoot.gameObject.AddComponent<MapEnvironmentController>();
+            }
+            
             // Find or add ChaseManager on the killer
             KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
             if (killerAgent != null)
@@ -116,7 +124,6 @@ public class SurvivorAgent : Agent
     {
         // Reset survivor state at the start of each episode
         rb.linearVelocity = Vector2.zero;
-        episodeTimer = 0f;
         scratchMarkTimer = 0f;
         wasMovingLastFrame = false;
         healthState = SurvivorHealthState.Healthy;
@@ -124,6 +131,10 @@ public class SurvivorAgent : Agent
         speedBoostTimer = 0f;
         downCount = 0;
         isEliminated = false;
+        
+        // Make sure the survivor is visible and active
+        gameObject.SetActive(true);
+        
         UpdateHealthColor();
     }
     
@@ -439,12 +450,8 @@ public class SurvivorAgent : Agent
         // Small negative reward per step to encourage efficiency
         AddReward(-0.0001f);
         
-        // Track episode time and end if time limit reached
-        episodeTimer += Time.deltaTime;
-        if (episodeTimer >= episodeTimeLimitSeconds)
-        {
-            PenalizeTimeLimit();
-        }
+        // Episode time is now tracked by MapEnvironmentController
+        // No need to track it here or call PenalizeTimeLimit
     }
     
     void Update()
@@ -639,14 +646,19 @@ public class SurvivorAgent : Agent
     {
         // Large penalty for getting caught by the killer
         AddReward(-2.0f);
-        EndEpisode();
+        // Don't end episode here - let environment controller handle it
     }
     
     public void RewardEscape()
     {
         // Large reward for escaping
         AddReward(5.0f);
-        EndEpisode();
+        
+        // Notify environment controller
+        if (environmentController != null)
+        {
+            environmentController.OnSurvivorsEscape();
+        }
     }
     
     public void RewardGeneratorsCompleted()
@@ -657,20 +669,9 @@ public class SurvivorAgent : Agent
     
     public void PenalizeTimeLimit()
     {
-        // Large penalty for not completing objectives within time limit
+        // This is now handled by MapEnvironmentController
+        // Keep the method for backward compatibility but don't call EndEpisode
         AddReward(-20.0f);
-        
-        // Also penalize the killer
-        if (environmentRoot != null)
-        {
-            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
-            if (killerAgent != null)
-            {
-                killerAgent.PenalizeTimeLimit();
-            }
-        }
-        
-        EndEpisode();
     }
     
     private void OnDrawGizmos()
@@ -827,56 +828,72 @@ public class SurvivorAgent : Agent
         // Hide the survivor (or you could destroy it, but keeping it helps with training)
         gameObject.SetActive(false);
         
+        Debug.Log($"[SurvivorAgent] {gameObject.name} has been eliminated (down #{downCount})");
+        
+        // Check if all remaining survivors are dying (edge case: if someone was eliminated while others are dying)
+        CheckAllSurvivorsDying();
+        
         // Check if all survivors are eliminated
         CheckAllSurvivorsEliminated();
     }
     
     private void CheckAllSurvivorsDying()
     {
-        if (environmentRoot == null) return;
+        if (environmentRoot == null)
+        {
+            Debug.LogWarning("[SurvivorAgent] CheckAllSurvivorsDying: environmentRoot is null");
+            return;
+        }
         
         SurvivorAgent[] allSurvivors = environmentRoot.GetComponentsInChildren<SurvivorAgent>(true);
         
         bool allDying = true;
         int survivorCount = 0;
+        int dyingCount = 0;
+        int eliminatedCount = 0;
         
         foreach (SurvivorAgent survivor in allSurvivors)
         {
             if (!survivor.isEliminated)
             {
                 survivorCount++;
-                if (survivor.GetHealthState() != SurvivorHealthState.Dying)
+                SurvivorHealthState state = survivor.GetHealthState();
+                
+                if (state == SurvivorHealthState.Dying)
+                {
+                    dyingCount++;
+                }
+                else
                 {
                     allDying = false;
-                    break;
                 }
             }
+            else
+            {
+                eliminatedCount++;
+            }
         }
+        
+        Debug.Log($"[SurvivorAgent] CheckAllSurvivorsDying: Total={allSurvivors.Length}, Active={survivorCount}, Dying={dyingCount}, Eliminated={eliminatedCount}, AllDying={allDying}");
         
         // Only trigger if we actually have survivors and they're all dying
         if (allDying && survivorCount > 0)
         {
-            // All survivors are dying - impossible to recover, killer wins
-            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
-            if (killerAgent != null)
-            {
-                killerAgent.RewardAllSurvivorsDown();
-            }
+            Debug.Log($"[SurvivorAgent] All {survivorCount} active survivors are dying! Triggering episode end.");
             
-            // End episode for all agents
-            foreach (SurvivorAgent survivor in allSurvivors)
+            // All survivors are dying - notify environment controller
+            if (environmentController != null)
             {
-                if (!survivor.isEliminated)
-                {
-                    survivor.AddReward(-3.0f); // Penalty for team wipe
-                    survivor.EndEpisode();
-                }
+                environmentController.OnAllSurvivorsDying();
             }
-            
-            if (killerAgent != null)
+            else
             {
-                killerAgent.EndEpisode();
+                Debug.LogError("[SurvivorAgent] environmentController is NULL! Cannot end episode!");
             }
+        }
+        else
+        {
+            Debug.Log($"[SurvivorAgent] Not all survivors dying yet. Active={survivorCount}, Dying={dyingCount}");
         }
     }
     
@@ -898,23 +915,10 @@ public class SurvivorAgent : Agent
         
         if (allEliminated)
         {
-            // All survivors eliminated - killer wins
-            // Reward killer
-            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
-            if (killerAgent != null)
+            // All survivors eliminated - notify environment controller
+            if (environmentController != null)
             {
-                killerAgent.RewardAllSurvivorsEliminated();
-            }
-            
-            // End episode for all agents
-            foreach (SurvivorAgent survivor in allSurvivors)
-            {
-                survivor.EndEpisode();
-            }
-            
-            if (killerAgent != null)
-            {
-                killerAgent.EndEpisode();
+                environmentController.OnAllSurvivorsEliminated();
             }
         }
     }

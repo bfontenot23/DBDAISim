@@ -47,6 +47,8 @@ public class SurvivorSpawnMarker : MonoBehaviour
         // Parent directly to the Map (not the tile)
         spawnedSurvivor.transform.SetParent(mapTransform);
         
+        Debug.Log($"[SurvivorSpawnMarker] Spawned survivor in {mapTransform.name} at position {transform.position}");
+        
         // Destroy the marker after spawning
         Destroy(gameObject);
     }

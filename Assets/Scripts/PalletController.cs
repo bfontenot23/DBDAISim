@@ -20,6 +20,8 @@ public class PalletController : MonoBehaviour
     public float velocityThreshold = 2.26f;
     public float lockDuration = 0.55f;
     public float dropZoneCheckRadius = 0.5f;
+    public float stunDuration = 2.0f;
+    public float stunCheckRadius = 1.5f;
     
     private bool isDropped = false;
     private MonoBehaviour playerInLeftZone;
@@ -333,6 +335,36 @@ public class PalletController : MonoBehaviour
         
         if (targetPosition != null && playerToMove != null)
         {
+            // Check if survivor is in chase and penalize if not
+            SurvivorAgent survivor = playerToMove.GetComponent<SurvivorAgent>();
+            if (survivor != null)
+            {
+                // Find the chase manager (on the killer in this environment)
+                Transform envRoot = survivor.transform.parent;
+                if (envRoot != null)
+                {
+                    KillerAgent killer = envRoot.GetComponentInChildren<KillerAgent>();
+                    if (killer != null)
+                    {
+                        ChaseManager chaseManager = killer.GetComponent<ChaseManager>();
+                        if (chaseManager != null)
+                        {
+                            bool inChase = chaseManager.IsInChase(survivor);
+                            if (!inChase)
+                            {
+                                // Penalize survivor for dropping pallet outside of chase
+                                survivor.AddReward(-0.5f);
+                                Debug.Log($"[PalletController] Penalized {survivor.name} for dropping pallet out of chase");
+                            }
+                            else
+                            {
+                                Debug.Log($"[PalletController] {survivor.name} is in chase, no penalty");
+                            }
+                        }
+                    }
+                }
+            }
+            
             lockedPlayer = playerToMove;
             InteractionController.LockCharacter(playerToMove);
             StartCoroutine(MovePlayerAndDropPallet(playerToMove, targetPosition));
@@ -373,11 +405,33 @@ public class PalletController : MonoBehaviour
         
         playerTransform.position = endPosition;
         
+        // Check if killer is in stun range when pallet drops
+        KillerAgent stunnedKiller = CheckForKillerStun(endPosition);
+        SurvivorAgent survivor = player.GetComponent<SurvivorAgent>();
+        
         if (standingObject != null)
             standingObject.SetActive(false);
         
         if (droppedObject != null)
             droppedObject.SetActive(true);
+        
+        // If killer was stunned, start stun coroutine
+        if (stunnedKiller != null)
+        {
+            Debug.Log($"[PalletController] Killer stunned by pallet drop!");
+            
+            // Reward survivor for stun
+            if (survivor != null)
+            {
+                survivor.RewardPalletStun();
+            }
+            
+            // Penalize killer for being stunned
+            stunnedKiller.RewardPalletStunned();
+            
+            // Start killer stun
+            StartCoroutine(StunKiller(stunnedKiller));
+        }
         
         float lockElapsed = 0f;
         while (lockElapsed < lockDuration)
@@ -397,5 +451,52 @@ public class PalletController : MonoBehaviour
         isDropped = true;
         lockedPlayer = null;
         InteractionController.UnlockCharacter(player);
+    }
+    
+    private KillerAgent CheckForKillerStun(Vector3 dropPosition)
+    {
+        // Check for killer in stun radius
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(dropPosition, stunCheckRadius);
+        foreach (Collider2D col in colliders)
+        {
+            if (col.CompareTag("Killer"))
+            {
+                KillerAgent killer = col.GetComponent<KillerAgent>();
+                if (killer != null)
+                {
+                    return killer;
+                }
+            }
+        }
+        return null;
+    }
+    
+    private IEnumerator StunKiller(KillerAgent killer)
+    {
+        // Lock the killer
+        InteractionController.LockCharacter(killer);
+        
+        // Stop killer movement
+        Rigidbody2D killerRb = killer.GetComponent<Rigidbody2D>();
+        if (killerRb != null)
+        {
+            killerRb.linearVelocity = Vector2.zero;
+        }
+        
+        float elapsed = 0f;
+        while (elapsed < stunDuration)
+        {
+            // Keep killer frozen
+            if (killerRb != null)
+            {
+                killerRb.linearVelocity = Vector2.zero;
+            }
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        // Unlock the killer
+        InteractionController.UnlockCharacter(killer);
     }
 }

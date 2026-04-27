@@ -56,6 +56,8 @@ public class KillerSpawnMarker : MonoBehaviour
         // Parent directly to the Map (not the tile)
         spawnedKiller.transform.SetParent(mapTransform);
         
+        Debug.Log($"[KillerSpawnMarker] Spawned killer in {mapTransform.name} at position {transform.position}");
+        
         // Destroy the marker after spawning
         Destroy(gameObject);
     }

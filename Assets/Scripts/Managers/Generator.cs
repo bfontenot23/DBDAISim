@@ -90,6 +90,16 @@ public class Generator : MonoBehaviour
             float progressThisFrame = totalRepairSpeed * Time.deltaTime;
             progress += progressThisFrame;
             
+            // Reward survivors for generator progress
+            foreach (GameObject player in repairingPlayers)
+            {
+                SurvivorAgent survivor = player.GetComponent<SurvivorAgent>();
+                if (survivor != null)
+                {
+                    survivor.RewardGeneratorProgress(progressThisFrame);
+                }
+            }
+            
             // Penalize killer for generator progress
             KillerAgent killerAgent = environmentRoot != null ? 
                 environmentRoot.GetComponentInChildren<KillerAgent>() : 
@@ -277,15 +287,11 @@ public class Generator : MonoBehaviour
                 killerAgent.PenalizeGeneratorsCompleted();
             }
             
-            // End episode for all agents
-            foreach (SurvivorAgent survivor in allSurvivors)
+            // Use MapEnvironmentController to end episode
+            MapEnvironmentController envController = environmentRoot.GetComponent<MapEnvironmentController>();
+            if (envController != null)
             {
-                survivor.EndEpisode();
-            }
-            
-            if (killerAgent != null)
-            {
-                killerAgent.EndEpisode();
+                envController.OnSurvivorsEscape();
             }
         }
     }
