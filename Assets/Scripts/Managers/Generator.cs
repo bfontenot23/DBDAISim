@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ public class Generator : MonoBehaviour
     public float maxProgress = 100f;
     public float baseRepairSpeed = 1f;
     private List<GameObject> repairingPlayers = new List<GameObject>();
-    private HashSet<PlayerController> playersInRange = new HashSet<PlayerController>();
+    private HashSet<MonoBehaviour> playersInRange = new HashSet<MonoBehaviour>();
     private bool isComplete = false;
 
     [Header("Regression")]
@@ -23,6 +24,14 @@ public class Generator : MonoBehaviour
     private Slider progressBar; 
     private GameObject progressCanvas; 
     private Transform uiTransform;
+    
+    [Header("Visual Feedback")]
+    private SpriteRenderer spriteRenderer;
+    private Color baseColor = new Color(0x52 / 255f, 0x52 / 255f, 0x52 / 255f); // #525252
+    private Color normalProgressColor = new Color(0xFF / 255f, 0xF3 / 255f, 0x00 / 255f); // #FFF300
+    private Color regressionProgressColor = new Color(0xFF / 255f, 0x85 / 255f, 0x00 / 255f); // #FF8500
+    
+    private Transform environmentRoot;
 
     void Start()
     {
@@ -33,6 +42,19 @@ public class Generator : MonoBehaviour
             progressCanvas.SetActive(false);
 
             uiTransform = progressCanvas.transform; 
+        }
+        
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = baseColor;
+        }
+        
+        // Find the environment root (Map_X parent)
+        environmentRoot = transform.parent;
+        if (environmentRoot == null)
+        {
+            Debug.LogWarning("[Generator] No parent found! Generator should be child of a Map.");
         }
     }
 
@@ -55,31 +77,41 @@ public class Generator : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
+        //Debug.Log($"Repairing: {repairingPlayers.Count}, Progress: {progress:F2}, Regressing: {isRegressing}");
         
-        foreach (var player in playersInRange)
-        {
-            if (Input.GetMouseButton(0))
-            {
-                StartRepair(player.gameObject);
-            }
-            else
-            {
-                StopRepair(player.gameObject);
-            }
-        }
 
+        
         int n = repairingPlayers.Count;
         //repairing
         if (n > 0)
         {
             float efficiency = GetEfficiency(n);
             float totalRepairSpeed = n * efficiency * baseRepairSpeed;
-            progress += totalRepairSpeed * Time.deltaTime;
+            float progressThisFrame = totalRepairSpeed * Time.deltaTime;
+            progress += progressThisFrame;
+            
+            // Reward survivors for generator progress
+            foreach (GameObject player in repairingPlayers)
+            {
+                SurvivorAgent survivor = player.GetComponent<SurvivorAgent>();
+                if (survivor != null)
+                {
+                    survivor.RewardGeneratorProgress(progressThisFrame);
+                }
+            }
+            
+            // Penalize killer for generator progress
+            KillerAgent killerAgent = environmentRoot != null ? 
+                environmentRoot.GetComponentInChildren<KillerAgent>() : 
+                null;
+            if (killerAgent != null)
+            {
+                killerAgent.PenalizeGeneratorProgress(progressThisFrame);
+            }
            
             if (isRegressing)
             {
-                repairSinceRegression += totalRepairSpeed * Time.deltaTime;
+                repairSinceRegression += progressThisFrame;
                 if (repairSinceRegression >= requiredRepairToStopRegression)
                 {
                     isRegressing = false;
@@ -118,6 +150,9 @@ public class Generator : MonoBehaviour
         {
             uiTransform.rotation = Quaternion.identity; 
         }
+        
+        // Update generator color based on progress
+        UpdateGeneratorColor();
     }
 
     float GetEfficiency(int survivors)
@@ -129,20 +164,54 @@ public class Generator : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.TryGetComponent(out PlayerController player))
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
         {
             playersInRange.Add(player);
-        
+            
+            // Notify InteractionController
+            InteractionController interactionController = player.GetComponent<InteractionController>();
+            if (interactionController != null)
+            {
+                interactionController.OnGeneratorEnter(this);
+            }
         }
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.TryGetComponent(out PlayerController player))
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
+        if (player != null)
         {
             playersInRange.Remove(player);
             StopRepair(player.gameObject);
+            
+            // Notify InteractionController
+            InteractionController interactionController = player.GetComponent<InteractionController>();
+            if (interactionController != null)
+            {
+                interactionController.OnGeneratorExit(this);
+            }
         }
+        
         if (playersInRange.Count == 0 && progressCanvas != null)
         {
             progressCanvas.SetActive(false);
@@ -170,15 +239,61 @@ public class Generator : MonoBehaviour
         isComplete = true;
         isRegressing = false;
         progress = maxProgress;
-        Debug.Log("Generator complete!");
         repairingPlayers.Clear();
 
         if (progressCanvas != null)
         {
             progressCanvas.SetActive(true);
         }
-        // Implement generator completion logic here (e.g., open exit, trigger events)
-
+        
+        // Check if enough generators are completed for survivors to win
+        CheckGeneratorCompletionWinCondition();
+    }
+    
+    private void CheckGeneratorCompletionWinCondition()
+    {
+        if (environmentRoot == null) return;
+        
+        // Count completed generators
+        Generator[] allGenerators = environmentRoot.GetComponentsInChildren<Generator>();
+        int completedCount = 0;
+        
+        foreach (Generator gen in allGenerators)
+        {
+            if (gen.isComplete)
+            {
+                completedCount++;
+            }
+        }
+        
+        // Win condition: 5 generators OR all available generators (whichever comes first)
+        int requiredGenerators = Mathf.Min(5, allGenerators.Length);
+        
+        if (completedCount >= requiredGenerators)
+        {
+            // Survivors win! Reward all survivors and penalize killer
+            SurvivorAgent[] allSurvivors = environmentRoot.GetComponentsInChildren<SurvivorAgent>(true);
+            foreach (SurvivorAgent survivor in allSurvivors)
+            {
+                if (!survivor.isEliminated)
+                {
+                    survivor.RewardGeneratorsCompleted();
+                }
+            }
+            
+            KillerAgent killerAgent = environmentRoot.GetComponentInChildren<KillerAgent>();
+            if (killerAgent != null)
+            {
+                killerAgent.PenalizeGeneratorsCompleted();
+            }
+            
+            // Use MapEnvironmentController to end episode
+            MapEnvironmentController envController = environmentRoot.GetComponent<MapEnvironmentController>();
+            if (envController != null)
+            {
+                envController.OnSurvivorsEscape();
+            }
+        }
     }
 
     public void StartRegression()
@@ -186,6 +301,47 @@ public class Generator : MonoBehaviour
         if (isComplete) return;
         isRegressing = true;
         repairSinceRegression = 0f;
+    }
+    
+    public void KickGenerator(GameObject kicker)
+    {
+        if (isComplete)
+        {
+            Debug.Log("[Generator] Cannot kick a completed generator");
+            return;
+        }
+        
+        // Can't kick a generator with no progress
+        if (progress <= 0f)
+        {
+            Debug.Log("[Generator] Cannot kick generator with 0 progress");
+            return;
+        }
+        
+        // Can't kick a generator that's already regressing
+        if (isRegressing)
+        {
+            Debug.Log("[Generator] Cannot kick generator that is already regressing");
+            return;
+        }
+        
+        // Lock the killer for 2.34 seconds, then start regression
+        KillerAgent killerAgent = kicker.GetComponent<KillerAgent>();
+        if (killerAgent != null)
+        {
+            killerAgent.StartCoroutine(killerAgent.PerformGeneratorKick(this));
+        }
+    }
+    
+    void UpdateGeneratorColor()
+    {
+        if (spriteRenderer == null) return;
+        
+        float progressRatio = Mathf.Clamp01(progress / maxProgress);
+        Color targetColor = isRegressing ? regressionProgressColor : normalProgressColor;
+        Color currentColor = Color.Lerp(baseColor, targetColor, progressRatio);
+        
+        spriteRenderer.color = currentColor;
     }
 
 }

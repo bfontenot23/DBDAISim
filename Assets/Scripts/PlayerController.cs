@@ -6,17 +6,39 @@ public class PlayerController : MonoBehaviour
     public float deceleration = 30f;
     public float maxSpeed = 4f;
     private Rigidbody2D rb;
+    private InteractionController interactionController;
     
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        interactionController = GetComponent<InteractionController>();
+        if (interactionController == null)
+        {
+            interactionController = gameObject.AddComponent<InteractionController>();
+        }
     }
     
     void Update()
     {
-        if (PalletController.IsPlayerLocked(this) || Vaultable.IsPlayerVaulting(this))
+        if (InteractionController.IsCharacterLocked(this) || InteractionController.IsCharacterVaulting(this))
         {
             return;
+        }
+        
+        // Handle interaction input
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            interactionController.TryInteract();
+        }
+        
+        // Handle generator repair
+        if (Input.GetMouseButton(0) && interactionController.GetCurrentGenerator() != null)
+        {
+            interactionController.StartGeneratorRepair();
+        }
+        else
+        {
+            interactionController.StopGeneratorRepair();
         }
         
         float horizontal = Input.GetAxisRaw("Horizontal");

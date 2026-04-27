@@ -6,6 +6,9 @@ public class MapGenerator : MonoBehaviour
     public int numberOfMaps = 1;
     public float mapSpacing = 2f;
     
+    [Header("Episode Settings")]
+    public float episodeTimeLimitSeconds = 600f;
+    
     [Header("Map Size")]
     public int width = 5;
     public int height = 5;
@@ -214,6 +217,10 @@ public class MapGenerator : MonoBehaviour
             mapParent.transform.SetParent(multiMapContainer.transform);
         }
         
+        // Add MapEnvironmentController to each map
+        MapEnvironmentController envController = mapParent.AddComponent<MapEnvironmentController>();
+        envController.episodeTimeLimitSeconds = episodeTimeLimitSeconds;
+        
         genFillerContainer = new GameObject("GenFiller");
         genFillerContainer.transform.SetParent(mapParent.transform);
         genFillerContainer.transform.localPosition = Vector3.zero;
@@ -384,5 +391,191 @@ public class MapGenerator : MonoBehaviour
         return null;      
         }
         return array[Random.Range(0, array.Length)];
+    }
+    
+    public void RegenerateSpecificMap(GameObject mapRoot)
+    {
+        if (mapRoot == null) return;
+        
+        // Get map index from name
+        string mapName = mapRoot.name;
+        int mapIndex = 0;
+        if (mapName.StartsWith("Map_"))
+        {
+            string indexStr = mapName.Substring(4);
+            if (!int.TryParse(indexStr, out mapIndex))
+            {
+                mapIndex = 0;
+            }
+        }
+        
+        // IMPORTANT: Store the current world position before destroying children
+        Vector3 savedWorldPosition = mapRoot.transform.position;
+        
+        // Destroy all children except the MapEnvironmentController
+        MapEnvironmentController envController = mapRoot.GetComponent<MapEnvironmentController>();
+        foreach (Transform child in mapRoot.transform)
+        {
+            Destroy(child.gameObject);
+        }
+        
+        // Set this as the current mapParent for generation
+        mapParent = mapRoot;
+        
+        // IMPORTANT: Reset the map parent position to zero before generating tiles
+        // (tiles will be placed relative to the parent, then we move the parent)
+        mapParent.transform.position = Vector3.zero;
+        
+        // Regenerate map contents at local origin
+        RegenerateMapContents(Vector3.zero);
+        
+        // IMPORTANT: Restore the saved world position AFTER tiles are children
+        mapParent.transform.position = savedWorldPosition;
+        
+        // Setup pallet and generator spawners
+        SetupPalletGenerator(mapParent);
+        SetupGeneratorSpawner(mapParent);
+        
+        // Trigger generation after a delay
+        StartCoroutine(TriggerRegenerationForMap(mapParent));
+    }
+    
+    private void RegenerateMapContents(Vector3 unusedOffset)
+    {
+        // Note: mapOffset is not used - tiles are placed relative to mapParent at origin,
+        // then the parent is moved to the correct world position
+        genFillerContainer = new GameObject("GenFiller");
+        genFillerContainer.transform.SetParent(mapParent.transform);
+        genFillerContainer.transform.localPosition = Vector3.zero;
+        
+        gymTileCount = 0;
+        float[] weights = { 0.5f, 0.3f, 0.2f };
+        float rand = Random.value;
+        if (rand < weights[0])
+            maxGymTiles = 3;
+        else if (rand < weights[0] + weights[1])
+            maxGymTiles = 4;
+        else
+            maxGymTiles = 5;
+        
+        placedTiles = new GameObject[width, height];
+        float size = 16f; 
+        int shackX = -1;
+        int shackY = -1;
+        int mainBuildingX = -1;
+        int mainBuildingY = -1;
+        
+        if (width > 2 && height > 2)
+        {
+            shackX = Random.Range(1, width - 1);
+            shackY = Random.Range(1, Mathf.Min(3, height - 1));
+        }
+        
+        if (width > 3 && height > 3)
+        {
+            int centerX = width / 2;
+            mainBuildingX = Random.Range(Mathf.Max(1, centerX - 1), Mathf.Min(width - 3, centerX + 1));
+            mainBuildingY = Random.Range(Mathf.Max(height - 3, 1), height - 2);
+        }
+
+        float offsetX = (width - 1) * size / 2f;
+        float offsetY = (height - 1) * size / 2f;
+
+        for (int x = 0; x < width; x++)
+        {
+            for ( int y = 0; y < height; y++)
+            {
+                Vector3 position = new Vector3(x * size - offsetX, y * size - offsetY, 0);
+                GameObject tilePrefab = null;
+                Quaternion rotation = Quaternion.identity;
+
+               if (x == 0 && y==0)
+                {
+                    tilePrefab = bottomLeftCorner;
+                    rotation = Quaternion.identity;
+                }
+                else if ( x == 0 && y == height - 1)
+                {
+                    tilePrefab = topLeftCorner;
+                    rotation = Quaternion.identity;
+                }
+                else if (x == width -1  && y == height - 1)
+                {
+                    tilePrefab = topRightCorner;
+                    rotation = Quaternion.identity;
+                }
+                else if (x == width - 1 && y == 0)
+                {
+                    tilePrefab = bottomRightCorner;
+                    rotation = Quaternion.identity;
+                }
+                else if (y == 0 || y == height -1)
+                {
+                    tilePrefab = GetRandom(horizontalTiles);
+                }
+                else if (x == 0 || x == width - 1)
+                {
+                    tilePrefab = GetRandom(verticalTiles);
+                }
+                else
+                {
+                    if (x == mainBuildingX && y == mainBuildingY)
+                    {
+                        spawnMainBuilding(position);
+                        continue;
+                    }
+                    else if ((x == mainBuildingX + 1 && y == mainBuildingY) ||
+                             (x == mainBuildingX && y == mainBuildingY + 1) ||
+                             (x == mainBuildingX + 1 && y == mainBuildingY + 1))
+                    {
+                        continue;
+                    }
+                    else if (x == shackX && y == shackY)
+                    {
+                        tilePrefab = shackTile;
+                    }
+                    else  
+                    {   
+                        float tileRand = Random.value;
+                        if (tileRand < 0.75f || gymTileCount >= maxGymTiles)
+                        {
+                            spawnFiller4(position);
+                            continue;
+                        }
+                        else
+                        {
+                            tilePrefab = gymGenTile;
+                            gymTileCount++;
+                        }
+                    }
+                }
+
+                if (tilePrefab == null)
+                {
+                    Debug.LogError("No tile prefab assigned for position (" + x + ", " + y + ").");
+                    continue;
+                }
+
+                GameObject instantiatedTile = Instantiate(tilePrefab, position, rotation, mapParent.transform);
+                placedTiles[x, y] = instantiatedTile;
+            }
+        }
+    }
+    
+    private System.Collections.IEnumerator TriggerRegenerationForMap(GameObject mapRoot)
+    {
+        yield return new WaitForSeconds(0.5f);
+        
+        GeneratePallets palletGen = mapRoot.GetComponent<GeneratePallets>();
+        if (palletGen != null)
+        {
+            palletGen.OnMapGenerationComplete();
+        }
+        
+        GenerateGenerators genSpawner = mapRoot.GetComponent<GenerateGenerators>();
+        if (genSpawner != null)
+        {
+            genSpawner.OnMapGenerationComplete();
+        }
     }
 }

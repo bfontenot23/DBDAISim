@@ -18,7 +18,16 @@ public class VaultZone : MonoBehaviour
     
     private void OnTriggerEnter2D(Collider2D other)
     {
-        PlayerController player = other.GetComponent<PlayerController>();
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
         if (player != null && vaultable != null)
         {
             vaultable.OnPlayerEnterVaultZone(player, side);
@@ -27,7 +36,16 @@ public class VaultZone : MonoBehaviour
     
     private void OnTriggerExit2D(Collider2D other)
     {
-        PlayerController player = other.GetComponent<PlayerController>();
+        MonoBehaviour player = other.GetComponent<PlayerController>();
+        if (player == null)
+        {
+            player = other.GetComponent<SurvivorAgent>();
+        }
+        if (player == null)
+        {
+            player = other.GetComponent<KillerAgent>();
+        }
+        
         if (player != null && vaultable != null)
         {
             vaultable.OnPlayerExitVaultZone(player, side);
