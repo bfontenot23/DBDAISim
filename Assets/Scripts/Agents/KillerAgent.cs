@@ -701,14 +701,14 @@ public class KillerAgent : Agent
     // Reward methods to be called from other scripts
     public void RewardCatchSurvivor()
     {
-        // Large reward for catching a survivor
-        AddReward(2.0f);
+        // Large reward for catching a survivor (increased from 2.0f to 3.0f)
+        AddReward(3.0f);
     }
     
     public void RewardHitSurvivor()
     {
-        // Reward for hitting a survivor
-        AddReward(0.5f);
+        // Reward for hitting a survivor (increased from 0.5f to 1.0f)
+        AddReward(1.0f);
     }
     
     public void RewardDamageGenerator()

@@ -352,8 +352,8 @@ public class PalletController : MonoBehaviour
                             bool inChase = chaseManager.IsInChase(survivor);
                             if (!inChase)
                             {
-                                // Penalize survivor for dropping pallet outside of chase
-                                survivor.AddReward(-0.5f);
+                                // Penalize survivor for dropping pallet outside of chase (increased from -0.5f to -1.5f)
+                                survivor.AddReward(-1.5f);
                                 Debug.Log($"[PalletController] Penalized {survivor.name} for dropping pallet out of chase");
                             }
                             else

@@ -12,6 +12,7 @@ public class Generator : MonoBehaviour
     public float baseRepairSpeed = 1f;
     private List<GameObject> repairingPlayers = new List<GameObject>();
     private HashSet<MonoBehaviour> playersInRange = new HashSet<MonoBehaviour>();
+    private HashSet<GameObject> survivorsWhoStartedGenerator = new HashSet<GameObject>();
     private bool isComplete = false;
 
     [Header("Regression")]
@@ -96,6 +97,14 @@ public class Generator : MonoBehaviour
                 SurvivorAgent survivor = player.GetComponent<SurvivorAgent>();
                 if (survivor != null)
                 {
+                    // Give first-time start reward
+                    if (!survivorsWhoStartedGenerator.Contains(player))
+                    {
+                        survivor.RewardStartGenerator();
+                        survivorsWhoStartedGenerator.Add(player);
+                    }
+                    
+                    // Give ongoing progress reward
                     survivor.RewardGeneratorProgress(progressThisFrame);
                 }
             }

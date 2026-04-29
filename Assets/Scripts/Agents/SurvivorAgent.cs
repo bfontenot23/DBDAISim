@@ -612,10 +612,16 @@ public class SurvivorAgent : Agent
     }
     
     // Reward methods to be called from other scripts
+    public void RewardStartGenerator()
+    {
+        // Large reward for starting to repair a generator (first time only)
+        AddReward(0.5f);
+    }
+    
     public void RewardGeneratorProgress(float progressAmount)
     {
-        // Reward for making progress on a generator
-        AddReward(progressAmount * 0.1f);
+        // Reward for making progress on a generator (increased from 0.1f to 0.2f)
+        AddReward(progressAmount * 0.2f);
     }
     
     public void RewardHealingProgress(float progressAmount)

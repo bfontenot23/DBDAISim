@@ -2,48 +2,48 @@
     "Survivor": {
         "checkpoints": [
             {
-                "steps": 14999944,
-                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-14999944.onnx",
+                "steps": 19999895,
+                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-19999895.onnx",
                 "reward": null,
-                "creation_time": 1777278343.6161935,
+                "creation_time": 1777324055.5134873,
                 "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Survivor\\Survivor-14999944.pt"
+                    "results\\dbd_training_v1\\Survivor\\Survivor-19999895.pt"
                 ]
             },
             {
-                "steps": 15499924,
-                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-15499924.onnx",
+                "steps": 20499911,
+                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-20499911.onnx",
                 "reward": null,
-                "creation_time": 1777278745.3280141,
+                "creation_time": 1777324444.2311227,
                 "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Survivor\\Survivor-15499924.pt"
+                    "results\\dbd_training_v1\\Survivor\\Survivor-20499911.pt"
                 ]
             },
             {
-                "steps": 15999940,
-                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-15999940.onnx",
+                "steps": 20999891,
+                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-20999891.onnx",
                 "reward": null,
-                "creation_time": 1777279148.0886812,
+                "creation_time": 1777324823.2560503,
                 "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Survivor\\Survivor-15999940.pt"
+                    "results\\dbd_training_v1\\Survivor\\Survivor-20999891.pt"
                 ]
             },
             {
-                "steps": 16499993,
-                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-16499993.onnx",
+                "steps": 21499999,
+                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-21499999.onnx",
                 "reward": null,
-                "creation_time": 1777279537.8477974,
+                "creation_time": 1777325216.5503628,
                 "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Survivor\\Survivor-16499993.pt"
+                    "results\\dbd_training_v1\\Survivor\\Survivor-21499999.pt"
                 ]
             },
             {
-                "steps": 16865806,
-                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-16865806.onnx",
+                "steps": 21999887,
+                "file_path": "results\\dbd_training_v1\\Survivor\\Survivor-21999887.onnx",
                 "reward": null,
-                "creation_time": 1777279867.6217468,
+                "creation_time": 1777325610.162451,
                 "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Survivor\\Survivor-16865806.pt"
+                    "results\\dbd_training_v1\\Survivor\\Survivor-21999887.pt"
                 ]
             }
         ],
@@ -60,42 +60,6 @@
     "Killer": {
         "checkpoints": [
             {
-                "steps": 2499948,
-                "file_path": "results\\dbd_training_v1\\Killer\\Killer-2499948.onnx",
-                "reward": null,
-                "creation_time": 1777274076.3439245,
-                "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Killer\\Killer-2499948.pt"
-                ]
-            },
-            {
-                "steps": 2999937,
-                "file_path": "results\\dbd_training_v1\\Killer\\Killer-2999937.onnx",
-                "reward": null,
-                "creation_time": 1777275928.16453,
-                "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Killer\\Killer-2999937.pt"
-                ]
-            },
-            {
-                "steps": 3499987,
-                "file_path": "results\\dbd_training_v1\\Killer\\Killer-3499987.onnx",
-                "reward": null,
-                "creation_time": 1777277537.3144166,
-                "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Killer\\Killer-3499987.pt"
-                ]
-            },
-            {
-                "steps": 3999985,
-                "file_path": "results\\dbd_training_v1\\Killer\\Killer-3999985.onnx",
-                "reward": null,
-                "creation_time": 1777279144.6102216,
-                "auxillary_file_paths": [
-                    "results\\dbd_training_v1\\Killer\\Killer-3999985.pt"
-                ]
-            },
-            {
                 "steps": 4223607,
                 "file_path": "results\\dbd_training_v1\\Killer\\Killer-4223607.onnx",
                 "reward": null,
@@ -103,15 +67,51 @@
                 "auxillary_file_paths": [
                     "results\\dbd_training_v1\\Killer\\Killer-4223607.pt"
                 ]
+            },
+            {
+                "steps": 4499899,
+                "file_path": "results\\dbd_training_v1\\Killer\\Killer-4499899.onnx",
+                "reward": -31.10829975745744,
+                "creation_time": 1777322435.5136006,
+                "auxillary_file_paths": [
+                    "results\\dbd_training_v1\\Killer\\Killer-4499899.pt"
+                ]
+            },
+            {
+                "steps": 4999949,
+                "file_path": "results\\dbd_training_v1\\Killer\\Killer-4999949.onnx",
+                "reward": null,
+                "creation_time": 1777324013.8799136,
+                "auxillary_file_paths": [
+                    "results\\dbd_training_v1\\Killer\\Killer-4999949.pt"
+                ]
+            },
+            {
+                "steps": 5499947,
+                "file_path": "results\\dbd_training_v1\\Killer\\Killer-5499947.onnx",
+                "reward": null,
+                "creation_time": 1777325569.6167793,
+                "auxillary_file_paths": [
+                    "results\\dbd_training_v1\\Killer\\Killer-5499947.pt"
+                ]
+            },
+            {
+                "steps": 5588718,
+                "file_path": "results\\dbd_training_v1\\Killer\\Killer-5588718.onnx",
+                "reward": null,
+                "creation_time": 1777325905.5220382,
+                "auxillary_file_paths": [
+                    "results\\dbd_training_v1\\Killer\\Killer-5588718.pt"
+                ]
             }
         ],
         "final_checkpoint": {
-            "steps": 4223607,
+            "steps": 5588718,
             "file_path": "results\\dbd_training_v1\\Killer.onnx",
             "reward": null,
-            "creation_time": 1777279867.72932,
+            "creation_time": 1777325905.5220382,
             "auxillary_file_paths": [
-                "results\\dbd_training_v1\\Killer\\Killer-4223607.pt"
+                "results\\dbd_training_v1\\Killer\\Killer-5588718.pt"
             ]
         }
     },
