@@ -9,8 +9,8 @@ public class ChaseManager : MonoBehaviour
     public float chaseEndNoLOSTime = 8f;
     
     [Header("Chase Rewards")]
-    public float chaseStartKillerReward = 0.5f;
-    public float chaseDurationKillerPenaltyPerSecond = -0.1f;
+    public float chaseStartKillerReward = 1.0f;
+    public float chaseDurationKillerPenaltyPerSecond = 0f;
     public float chaseDurationSurvivorRewardPerSecond = 0.1f;
     public float chaseLostKillerPenalty = -1.0f;
     public float chaseLostSurvivorReward = 1.0f;

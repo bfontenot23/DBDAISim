@@ -217,7 +217,6 @@ public class MapGenerator : MonoBehaviour
             mapParent.transform.SetParent(multiMapContainer.transform);
         }
         
-        // Add MapEnvironmentController to each map
         MapEnvironmentController envController = mapParent.AddComponent<MapEnvironmentController>();
         envController.episodeTimeLimitSeconds = episodeTimeLimitSeconds;
         
@@ -338,10 +337,8 @@ public class MapGenerator : MonoBehaviour
             }
         }
         
-        // Move the parent to the correct grid position after all tiles are placed as children
         mapParent.transform.position = mapOffset;
         
-        // Setup pallet generator for this map if in multi-map mode
         if (numberOfMaps > 1)
         {
             SetupPalletGenerator(mapParent);
@@ -408,28 +405,18 @@ public class MapGenerator : MonoBehaviour
                 mapIndex = 0;
             }
         }
-        
-        // IMPORTANT: Store the current world position before destroying children
+
         Vector3 savedWorldPosition = mapRoot.transform.position;
         
-        // Destroy all children except the MapEnvironmentController
         MapEnvironmentController envController = mapRoot.GetComponent<MapEnvironmentController>();
         foreach (Transform child in mapRoot.transform)
         {
             Destroy(child.gameObject);
         }
         
-        // Set this as the current mapParent for generation
         mapParent = mapRoot;
-        
-        // IMPORTANT: Reset the map parent position to zero before generating tiles
-        // (tiles will be placed relative to the parent, then we move the parent)
         mapParent.transform.position = Vector3.zero;
-        
-        // Regenerate map contents at local origin
         RegenerateMapContents(Vector3.zero);
-        
-        // IMPORTANT: Restore the saved world position AFTER tiles are children
         mapParent.transform.position = savedWorldPosition;
         
         // Setup pallet and generator spawners
@@ -442,8 +429,6 @@ public class MapGenerator : MonoBehaviour
     
     private void RegenerateMapContents(Vector3 unusedOffset)
     {
-        // Note: mapOffset is not used - tiles are placed relative to mapParent at origin,
-        // then the parent is moved to the correct world position
         genFillerContainer = new GameObject("GenFiller");
         genFillerContainer.transform.SetParent(mapParent.transform);
         genFillerContainer.transform.localPosition = Vector3.zero;

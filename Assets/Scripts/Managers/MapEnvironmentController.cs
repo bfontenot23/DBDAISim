@@ -27,7 +27,6 @@ public class MapEnvironmentController : MonoBehaviour
     
     void Start()
     {
-        // Don't register immediately - wait for agents to spawn from markers
         StartCoroutine(DelayedAgentRegistration());
     }
     
@@ -100,7 +99,6 @@ public class MapEnvironmentController : MonoBehaviour
         // End episode for all agents in the group at once
         agentGroup.GroupEpisodeInterrupted();
         
-        // Trigger map regeneration
         RegenerateMap();
     }
     
@@ -141,7 +139,6 @@ public class MapEnvironmentController : MonoBehaviour
             killer.AddReward(10.0f);
         }
         
-        // Penalize survivors (already penalized individually when eliminated)
         
         EndEnvironmentEpisode();
     }
@@ -203,7 +200,7 @@ public class MapEnvironmentController : MonoBehaviour
         // Get the MapGenerator from parent or scene
         if (mapGenerator == null)
         {
-            mapGenerator = FindObjectOfType<MapGenerator>();
+            mapGenerator = FindObjectOfType<MapGenerator>();  // i know its depreciated but i like this function
         }
         
         if (mapGenerator != null)

@@ -115,7 +115,7 @@ public class SurvivorAgent : Agent
         if (decisionRequester == null)
         {
             decisionRequester = gameObject.AddComponent<Unity.MLAgents.DecisionRequester>();
-            decisionRequester.DecisionPeriod = 1; // Request decision every frame
+            decisionRequester.DecisionPeriod = 1; // Request decision every frame or everything breaks
             decisionRequester.TakeActionsBetweenDecisions = true;
         }
     }
@@ -132,7 +132,6 @@ public class SurvivorAgent : Agent
         downCount = 0;
         isEliminated = false;
         
-        // Make sure the survivor is visible and active
         gameObject.SetActive(true);
         
         UpdateHealthColor();
@@ -272,7 +271,7 @@ public class SurvivorAgent : Agent
             survivorsChecked++;
         }
         
-        // Fill remaining slots if less than 3 other survivors
+        // Fill remaining slots if less than 3 other survivors, which should never be the case but just in case
         for (int i = survivorsChecked; i < 3; i++)
         {
             sensor.AddObservation(0f); // No LOS
@@ -418,7 +417,6 @@ public class SurvivorAgent : Agent
                 if (healTarget.CanBeHealed() && healthState != SurvivorHealthState.Dying)
                 {
                     interactionController.StartHealing();
-                    // Don't stop generator repair here, only when actively healing
                     if (interactionController.IsHealing())
                     {
                         interactionController.StopGeneratorRepair();
@@ -450,8 +448,6 @@ public class SurvivorAgent : Agent
         // Small negative reward per step to encourage efficiency
         AddReward(-0.0001f);
         
-        // Episode time is now tracked by MapEnvironmentController
-        // No need to track it here or call PenalizeTimeLimit
     }
     
     void Update()
@@ -488,10 +484,8 @@ public class SurvivorAgent : Agent
             }
         }
         
-        // Apply movement every frame using stored actions
         ApplyMovement();
         
-        // Handle scratch mark spawning
         HandleScratchMarks();
     }
     
@@ -499,7 +493,6 @@ public class SurvivorAgent : Agent
     {
         if (scratchMarkPrefab == null) return;
         
-        // Dying survivors don't leave scratch marks
         if (healthState == SurvivorHealthState.Dying)
         {
             scratchMarkTimer = 0f;
@@ -511,7 +504,6 @@ public class SurvivorAgent : Agent
         
         if (isMoving)
         {
-            // Reset timer when starting to move
             if (!wasMovingLastFrame)
             {
                 scratchMarkTimer = 0f;
@@ -519,7 +511,6 @@ public class SurvivorAgent : Agent
             
             scratchMarkTimer += Time.deltaTime;
             
-            // Spawn scratch mark every interval
             if (scratchMarkTimer >= scratchMarkSpawnInterval)
             {
                 Instantiate(scratchMarkPrefab, transform.position, Quaternion.identity);
@@ -528,7 +519,6 @@ public class SurvivorAgent : Agent
         }
         else
         {
-            // Reset timer when stopped
             scratchMarkTimer = 0f;
         }
         
@@ -612,10 +602,16 @@ public class SurvivorAgent : Agent
     }
     
     // Reward methods to be called from other scripts
+    public void RewardStartGenerator()
+    {
+        // Reward for starting to repair a generator
+        AddReward(0.5f);
+    }
+    
     public void RewardGeneratorProgress(float progressAmount)
     {
-        // Reward for making progress on a generator
-        AddReward(progressAmount * 0.1f);
+        // Reward for making progress on a generator (increased from 0.1f to 0.2f in v2)
+        AddReward(progressAmount * 0.2f);
     }
     
     public void RewardHealingProgress(float progressAmount)
@@ -646,7 +642,6 @@ public class SurvivorAgent : Agent
     {
         // Large penalty for getting caught by the killer
         AddReward(-2.0f);
-        // Don't end episode here - let environment controller handle it
     }
     
     public void RewardEscape()
@@ -669,8 +664,6 @@ public class SurvivorAgent : Agent
     
     public void PenalizeTimeLimit()
     {
-        // This is now handled by MapEnvironmentController
-        // Keep the method for backward compatibility but don't call EndEpisode
         AddReward(-20.0f);
     }
     
@@ -680,7 +673,6 @@ public class SurvivorAgent : Agent
         
         float angleStep = 360f / numCircleRaycasts;
         
-        // Draw circle raycasts (cyan)
         for (int i = 0; i < numCircleRaycasts; i++)
         {
             float angle = i * angleStep;
@@ -729,7 +721,7 @@ public class SurvivorAgent : Agent
                 }
             }
             
-            // Draw ray - green if LOS, red if blocked
+            // Draw ray green if LOS, red if blocked
             Gizmos.color = hasLOS ? Color.green : Color.red;
             Gizmos.DrawLine(transform.position, otherSurvivor.transform.position);
             
@@ -770,7 +762,7 @@ public class SurvivorAgent : Agent
                 }
             }
             
-            // Draw ray - yellow if LOS, orange if blocked
+            // Draw ray yellow if LOS, orange if blocked
             Gizmos.color = hasLOS ? Color.yellow : new Color(1f, 0.5f, 0f);
             Gizmos.DrawLine(transform.position, killer.transform.position);
         }
@@ -915,7 +907,6 @@ public class SurvivorAgent : Agent
         
         if (allEliminated)
         {
-            // All survivors eliminated - notify environment controller
             if (environmentController != null)
             {
                 environmentController.OnAllSurvivorsEliminated();

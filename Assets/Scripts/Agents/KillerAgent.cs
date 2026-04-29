@@ -22,7 +22,7 @@ public class KillerAgent : Agent
     
     [Header("Attack Settings")]
     public float lungeSpeed = 6.9f;
-    public float lungeAcceleration = 50f; // Fast acceleration to lunge speed
+    public float lungeAcceleration = 50f;
     public float lungeChargeMaxTime = 0.5f;
     public float lungeActiveTime = 0.3f;
     public float hitSlowdownSpeed = 0.575f;
@@ -42,7 +42,6 @@ public class KillerAgent : Agent
     private int storedInteractAction = 0;
     private int storedAttackAction = 0;
     
-    // Attack state tracking
     private bool isAttacking = false;
     private bool isLunging = false;
     private float lungeChargeTime = 0f;
@@ -113,7 +112,7 @@ public class KillerAgent : Agent
         if (decisionRequester == null)
         {
             decisionRequester = gameObject.AddComponent<Unity.MLAgents.DecisionRequester>();
-            decisionRequester.DecisionPeriod = 1; // Request decision every frame
+            decisionRequester.DecisionPeriod = 1; // Request decision every frame or everything breaks
             decisionRequester.TakeActionsBetweenDecisions = true;
         }
     }
@@ -265,7 +264,7 @@ public class KillerAgent : Agent
             survivorsChecked++;
         }
         
-        // Fill remaining slots if less than 4 survivors
+        // Fill remaining slots if less than 4 survivors, which there should never be but just in case
         for (int i = survivorsChecked; i < 4; i++)
         {
             sensor.AddObservation(0f); // No LOS
@@ -312,8 +311,6 @@ public class KillerAgent : Agent
         // Small negative reward per step to encourage efficiency
         AddReward(-0.0001f);
         
-        // Episode time is now tracked by MapEnvironmentController
-        // No need to track it here
     }
     
     void Update()
@@ -365,7 +362,6 @@ public class KillerAgent : Agent
             }
         }
         
-        // Apply movement every frame using stored actions
         ApplyMovement();
     }
     
@@ -490,7 +486,6 @@ public class KillerAgent : Agent
             
             float currentMaxSpeed = Mathf.Lerp(targetSpeed, maxSpeed, smoothT);
             
-            // Allow input during slowdown - just limit max speed
             Vector2 input = new Vector2(storedHorizontal, storedVertical);
             
             if (input.magnitude > 0.1f)
@@ -517,7 +512,7 @@ public class KillerAgent : Agent
             }
             else
             {
-                // No input - apply deceleration
+                // No input
                 if (rb.linearVelocity.magnitude > 0.01f)
                 {
                     Vector2 decelerationVector = -rb.linearVelocity.normalized * deceleration * Time.deltaTime;
@@ -549,7 +544,7 @@ public class KillerAgent : Agent
         {
             if (hit.CompareTag("Survivor"))
             {
-                // Hit a survivor!
+                // Hit a survivor
                 SurvivorAgent survivorAgent = hit.GetComponent<SurvivorAgent>();
                 if (survivorAgent != null)
                 {
@@ -599,10 +594,8 @@ public class KillerAgent : Agent
             generator.StartRegression();
         }
         
-        // Unlock the killer
         InteractionController.UnlockCharacter(this);
         
-        // Reward for damaging generator
         RewardDamageGenerator();
     }
     
@@ -632,7 +625,6 @@ public class KillerAgent : Agent
         // Unlock the killer
         InteractionController.UnlockCharacter(this);
         
-        // Reward for breaking pallet
         RewardBreakPallet();
     }
     
@@ -701,14 +693,14 @@ public class KillerAgent : Agent
     // Reward methods to be called from other scripts
     public void RewardCatchSurvivor()
     {
-        // Large reward for catching a survivor
-        AddReward(2.0f);
+        // Large reward for catching a survivor (increased from 2.0f to 3.0f in v2)
+        AddReward(3.0f);
     }
     
     public void RewardHitSurvivor()
     {
-        // Reward for hitting a survivor
-        AddReward(0.5f);
+        // Reward for hitting a survivor (increased from 0.5f to 1.0f in v2)
+        AddReward(1.0f);
     }
     
     public void RewardDamageGenerator()
@@ -740,21 +732,18 @@ public class KillerAgent : Agent
     {
         // Large reward for catching all survivors
         AddReward(10.0f);
-        // Don't end episode here - environment controller handles it
     }
     
     public void RewardAllSurvivorsEliminated()
     {
         // Large reward for eliminating all survivors (third down)
         AddReward(10.0f);
-        // Don't end episode here - environment controller handles it
     }
     
     public void RewardAllSurvivorsDown()
     {
         // Large reward for getting all survivors into dying state simultaneously
         AddReward(10.0f);
-        // Don't end episode here - environment controller handles it
     }
     
     public void PenalizeGeneratorsCompleted()
@@ -765,8 +754,7 @@ public class KillerAgent : Agent
     
     public void PenalizeTimeLimit()
     {
-        // This is now handled by MapEnvironmentController
-        // Keep the method for backward compatibility but don't call EndEpisode
+        // Penalty for exceeding time limit
         AddReward(-20.0f);
     }
     
@@ -776,7 +764,7 @@ public class KillerAgent : Agent
         
         float angleStep = 360f / numCircleRaycasts;
         
-        // Draw circle raycasts (magenta for killer)
+        // Draw circle raycasts
         for (int i = 0; i < numCircleRaycasts; i++)
         {
             float angle = i * angleStep;
@@ -825,7 +813,7 @@ public class KillerAgent : Agent
                 }
             }
             
-            // Draw ray - red if LOS (killer sees survivor), gray if blocked
+            // for editor
             Gizmos.color = hasLOS ? Color.red : Color.gray;
             Gizmos.DrawLine(transform.position, survivor.transform.position);
             
